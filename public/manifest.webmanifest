@@ -1,0 +1,12 @@
+{
+  "name": "Cadence",
+  "short_name": "Cadence",
+  "description": "Rapid clinical reasoning drills. Synthetic patients, educational use only.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#EFF3F5",
+  "theme_color": "#1B5480",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

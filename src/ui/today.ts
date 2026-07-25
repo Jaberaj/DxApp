@@ -1,0 +1,154 @@
+/* ══════════════════════════════════════════════════════════════
+   Today — the home screen. Focus bar, the queued set, the rhythm
+   strip, and where you stand.
+   ══════════════════════════════════════════════════════════════ */
+
+import type { Ctx } from './app';
+import { el, esc } from './dom';
+import { ecgPath } from './ecg';
+import { focusOption } from '../engine/session';
+import { band, decayedScore } from '../engine/mastery';
+import { currentLength, dateKey } from '../engine/streak';
+import { CONCEPTS, ITEMS } from '../content/bank';
+import { inBlock } from '../engine/session';
+
+const PULSE_ICON =
+  '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>';
+const CHEVRON =
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>';
+
+export function renderToday(ctx: Ctx): HTMLElement {
+  const { state } = ctx;
+  const now = new Date();
+  const opt = focusOption(state.focus);
+  const streakLen = currentLength(state.streak, now);
+  const dateLine = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const root = el(`<div class="flex-col">
+    <div class="topbar">
+      <div class="ttl">
+        <h2 class="big">Today</h2>
+        <p>${esc(dateLine)}</p>
+      </div>
+      <span class="streak-chip">${PULSE_ICON}${streakLen}</span>
+    </div>
+    <div class="scroll"></div>
+  </div>`);
+
+  const scroll = root.querySelector('.scroll')!;
+
+  // ── focus bar ──
+  const focusBar = el(`<button class="focusbar" type="button">
+    <span class="swatch" style="background:${state.focus.mode === 'rotation' ? 'var(--depth)' : 'var(--pulse)'}"></span>
+    <span class="txt">
+      <b>${esc(opt.name)}</b>
+      <span>${state.focus.mode === 'rotation' ? 'Rotation' : 'Systems course'} · ${state.focus.mixPercent}% on block, ${100 - state.focus.mixPercent}% review</span>
+    </span>
+    ${CHEVRON}
+  </button>`);
+  focusBar.addEventListener('click', () => ctx.go('focus'));
+  scroll.appendChild(focusBar);
+
+  // ── queued set ──
+  scroll.appendChild(el('<p class="sect">Queued for you</p>'));
+  const drillTask = el(`<button class="task" type="button">
+    <span class="ic" style="background:var(--pulse-l)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pulse)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>
+    </span>
+    <span class="bd">
+      <b>Rapid differentials</b>
+      <span>12 items · ${esc(opt.topicLine)} · ~6 min</span>
+    </span>
+    <span class="go">${CHEVRON}</span>
+  </button>`);
+  drillTask.addEventListener('click', () => ctx.go('drill'));
+  scroll.appendChild(drillTask);
+
+  // presentation coach is V2 — locked with an explainer, per the guide
+  scroll.appendChild(el(`<div class="task locked" aria-disabled="true">
+    <span class="ic" style="background:var(--plum-l)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--plum)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>
+    </span>
+    <span class="bd">
+      <b>Present a case</b>
+      <span>Coming next — say your reasoning out loud, get graded on pacing and structure</span>
+    </span>
+  </div>`));
+
+  // ── rhythm strip: last 7 days ──
+  scroll.appendChild(el('<p class="sect">Rhythm</p>'));
+  scroll.appendChild(rhythmStrip(ctx, now, streakLen));
+
+  // ── where you stand ──
+  scroll.appendChild(el(`<p class="sect">Where you stand — ${esc(opt.name.toLowerCase())}</p>`));
+  scroll.appendChild(masteryCard(ctx, now));
+  scroll.appendChild(el('<div style="height:8px"></div>'));
+
+  return root;
+}
+
+function rhythmStrip(ctx: Ctx, now: Date, streakLen: number): HTMLElement {
+  const { streak } = ctx.state;
+  const goal = ctx.state.settings.dailyGoal;
+  const days: { key: string; label: string; met: boolean }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    days.push({
+      key: dateKey(d),
+      label: d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase(),
+      met: (streak.history[dateKey(d)] ?? 0) >= goal,
+    });
+  }
+  const today = days[6];
+  const flat = days.map((d, i) => (d.met ? -1 : i)).filter((i) => i >= 0 && i < 6);
+  const headline = streakLen === 1 ? '1 day' : `${streakLen} days`;
+  const sub = today.met ? 'Today is in' : "Today's still open";
+
+  const strip = el(`<div class="strip">
+    <div class="strip-head"><b>${headline}</b><span class="strip-sub">${sub}</span></div>
+    <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-label="The last seven days as a rhythm strip.">
+      <path class="trace" d="${ecgPath(0, (320 * 6) / 7, 50, 6, { amp: 0.8, flat })}"></path>
+      <path class="trace ${today.met ? '' : 'pending'}" d="${
+        today.met
+          ? ecgPath((320 * 6) / 7, 320 / 7, 50, 1, { amp: 0.8 })
+          : `M ${(320 * 6) / 7} 25 L 320 25`
+      }"></path>
+    </svg>
+    <div class="days">${days
+      .map((d, i) => `<span class="${i === 6 ? 'now' : ''}">${d.label}</span>`)
+      .join('')}</div>
+  </div>`);
+  return strip;
+}
+
+function masteryCard(ctx: Ctx, now: Date): HTMLElement {
+  const { state } = ctx;
+  // topics relevant to the current focus: topics of concepts with an in-block item
+  const relevantTopics = new Set(
+    CONCEPTS.filter((c) =>
+      ITEMS.some((i) => i.conceptId === c.conceptId && inBlock(i, state.focus)),
+    ).map((c) => c.topic),
+  );
+  const rows = Object.values(state.mastery)
+    .filter((m) => relevantTopics.has(m.topic))
+    .map((m) => ({ topic: m.topic, score: Math.round(decayedScore(m, now)) }))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 5);
+
+  if (rows.length === 0) {
+    return el(`<div class="card pad">
+      <p class="empty-note">No reads yet. Your first set calibrates where you stand — mastery moves visibly after every set, and weak topics resurface more.</p>
+    </div>`);
+  }
+
+  const card = el('<div class="card pad"></div>');
+  for (const r of rows) {
+    const b = band(r.score);
+    card.appendChild(el(`<div class="mrow">
+      <div class="mtop"><span>${esc(r.topic)}</span><em>${r.score}%</em></div>
+      <div class="mtrack"><div class="mfill ${b === 'working' ? 'mid' : b === 'shaky' ? 'low' : ''}" style="width:${r.score}%"></div></div>
+    </div>`));
+  }
+  return card;
+}

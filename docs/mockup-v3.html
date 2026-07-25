@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadence — clinical reasoning, out loud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   CADENCE — v3
+   The register is a professional instrument that happens to keep
+   score, not a game with a medical skin. Saturation is pulled
+   right down: teal for progress, deep blue for navigation, clay
+   for "running long", arterial red for a miss, plum for the coach.
+   The one flourish kept from the earlier studies is the rhythm
+   strip — a streak drawn as a trace, a miss drawn as a flatline.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --paper:#EFF3F5;
+  --card:#FFFFFF;
+  --sunk:#F4F7F8;
+  --rule:#DCE4E8;
+  --rule-2:#C6D3D9;
+
+  --ink:#16232B;
+  --ink-2:#5C7280;
+  --ink-3:#93A6B0;
+
+  --pulse:#0F8A72;   --pulse-d:#0A6A57;  --pulse-l:#E2F3EF;
+  --depth:#1B5480;   --depth-d:#143E60;  --depth-l:#E4EEF6;
+  --clay:#B5651D;    --clay-d:#8E4E14;   --clay-l:#FAEEE2;
+  --alarm:#B0293C;   --alarm-d:#8B1F2F;  --alarm-l:#FAE8EA;
+  --plum:#67457F;    --plum-d:#4F3363;   --plum-l:#F0EAF5;
+  --brass:#9A7526;   --brass-l:#F6F0DF;
+
+  --stage:#DFE6EA;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--stage);
+  font-family:'Source Sans 3',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  color:var(--ink-2);font-size:15px;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:26px 16px 60px;
+}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.disp{font-family:'Archivo',sans-serif;letter-spacing:-.02em}
+
+/* ── stage ─────────────────────────────────────────────────── */
+.stage-head{width:100%;max-width:940px;margin-bottom:16px}
+.stage-head h1{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.01em}
+.stage-head p{margin:2px 0 0;font-size:13px;color:var(--ink-3)}
+.picker{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:24px;max-width:940px}
+.picker button{
+  font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:600;
+  background:var(--card);border:1px solid var(--rule);color:var(--ink-3);
+  padding:6px 13px;border-radius:8px;cursor:pointer;transition:.15s;
+}
+.picker button:hover{color:var(--ink-2)}
+.picker button:focus-visible{outline:2px solid var(--depth);outline-offset:2px}
+.picker button[aria-current="true"]{color:var(--depth);border-color:var(--depth);background:var(--depth-l)}
+
+/* ── device ────────────────────────────────────────────────── */
+.device{
+  width:393px;height:852px;flex:0 0 auto;background:var(--paper);
+  border-radius:50px;position:relative;overflow:hidden;color:var(--ink);
+  box-shadow:0 28px 64px -20px rgba(18,40,55,.34),0 0 0 1px rgba(18,40,55,.1);
+}
+.viewport{position:absolute;inset:0;display:flex;flex-direction:column}
+.statusbar{height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 30px 5px;font-size:15px;font-weight:600;color:var(--ink);font-family:'Source Sans 3',sans-serif}
+.statusbar .glyphs{display:flex;align-items:center;gap:6px}
+.statusbar svg{display:block}
+.screens{position:relative;flex:1 1 auto;overflow:hidden}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen.is-active{display:flex;animation:in .26s cubic-bezier(.22,.9,.3,1)}
+@keyframes in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:0 18px 18px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ── buttons: substantial but not toy. 2px ledge, not 4. ───── */
+.btn{
+  display:block;width:100%;border:0;cursor:pointer;font-family:'Archivo',sans-serif;
+  font-size:15px;font-weight:600;letter-spacing:.005em;padding:14px 18px;border-radius:13px;
+  color:#fff;background:var(--depth);box-shadow:0 2px 0 var(--depth-d);
+  transition:transform .07s,box-shadow .07s;
+}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.btn.pulse{background:var(--pulse);box-shadow:0 2px 0 var(--pulse-d)}
+.btn.plum{background:var(--plum);box-shadow:0 2px 0 var(--plum-d)}
+.btn.alarm{background:var(--alarm);box-shadow:0 2px 0 var(--alarm-d)}
+.btn.quiet{background:var(--card);color:var(--ink-2);border:1px solid var(--rule);box-shadow:0 2px 0 var(--rule);padding:13px 18px}
+.btn.quiet:active{box-shadow:none}
+.btn.off{background:#DDE5E9;color:var(--ink-3);box-shadow:0 2px 0 #CBD7DC;cursor:default}
+.btn.off:active{transform:none;box-shadow:0 2px 0 #CBD7DC}
+
+/* ── shared ────────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--rule);border-radius:15px}
+.lab{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+.sect{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:22px 0 9px}
+h2.big{font-family:'Archivo',sans-serif;font-size:27px;font-weight:700;letter-spacing:-.025em;color:var(--ink);margin:0}
+
+.topbar{display:flex;align-items:center;gap:12px;padding:2px 18px 12px}
+.topbar .ttl{flex:1}
+.topbar .ttl h2{margin:0}
+.topbar .ttl p{margin:1px 0 0;font-size:13px;color:var(--ink-3)}
+.iconb{background:none;border:0;cursor:pointer;color:var(--ink-3);padding:0;display:grid;place-items:center}
+.iconb:focus-visible{outline:2px solid var(--depth);outline-offset:3px;border-radius:6px}
+.crumb{flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.footpad{flex:0 0 auto;padding:12px 18px 14px;display:flex;flex-direction:column;gap:9px}
+
+/* ── focus bar ─────────────────────────────────────────────── */
+.focusbar{
+  display:flex;align-items:center;gap:12px;width:100%;cursor:pointer;text-align:left;
+  background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:12px 14px;
+  font-family:inherit;color:inherit;box-shadow:0 1px 2px rgba(18,40,55,.04);
+}
+.focusbar:focus-visible{outline:2px solid var(--depth);outline-offset:2px}
+.focusbar .swatch{width:5px;align-self:stretch;border-radius:99px;background:var(--depth);flex:0 0 5px}
+.focusbar .txt{flex:1;min-width:0}
+.focusbar .txt b{display:block;font-family:'Archivo',sans-serif;font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.focusbar .txt span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── task rows ─────────────────────────────────────────────── */
+.task{
+  display:flex;align-items:center;gap:13px;width:100%;cursor:pointer;text-align:left;
+  background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:14px;
+  font-family:inherit;color:inherit;margin-bottom:9px;
+  box-shadow:0 1px 2px rgba(18,40,55,.04);transition:border-color .15s,transform .07s;
+}
+.task:active{transform:scale(.995)}
+.task:focus-visible{outline:2px solid var(--depth);outline-offset:2px}
+.task .ic{width:40px;height:40px;border-radius:11px;flex:0 0 40px;display:grid;place-items:center}
+.task .bd{flex:1;min-width:0}
+.task .bd b{display:block;font-family:'Archivo',sans-serif;font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.task .bd span{display:block;font-size:13px;color:var(--ink-3);margin-top:2px}
+.task .go{color:var(--ink-3);flex:0 0 auto}
+
+/* ── rhythm strip: the one flourish that stayed ────────────── */
+.strip{background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:13px 14px 11px;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.strip-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px}
+.strip-head b{font-family:'Archivo',sans-serif;font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.strip svg{display:block;width:100%;height:50px;overflow:visible}
+.trace{fill:none;stroke:var(--pulse);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.trace.pending{stroke:var(--rule-2);stroke-dasharray:3 4}
+.days{display:flex;justify-content:space-between;margin-top:8px;gap:4px}
+.days span{flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:var(--ink-3)}
+.days span.now{color:var(--clay);font-weight:600}
+
+/* ── mastery bars ──────────────────────────────────────────── */
+.mrow{padding:11px 0;border-top:1px solid var(--rule)}
+.mrow:first-child{border-top:0;padding-top:2px}
+.mtop{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
+.mtop span{font-size:14px;font-weight:600;color:var(--ink)}
+.mtop em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-3)}
+.mtrack{height:6px;border-radius:99px;background:#E3EAED;overflow:hidden}
+.mfill{height:100%;border-radius:99px;background:var(--pulse)}
+.mfill.mid{background:var(--brass)} .mfill.low{background:var(--alarm)}
+
+/* ── segmented control ─────────────────────────────────────── */
+.seg{display:flex;background:#E3EAED;border-radius:11px;padding:3px;gap:3px}
+.seg button{
+  flex:1;border:0;cursor:pointer;font-family:'Archivo',sans-serif;font-size:14px;font-weight:600;
+  padding:9px 8px;border-radius:9px;background:transparent;color:var(--ink-2);transition:.15s;
+}
+.seg button:focus-visible{outline:2px solid var(--depth);outline-offset:1px}
+.seg button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(18,40,55,.12)}
+
+/* ── focus grid ────────────────────────────────────────────── */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.opt-tile{
+  display:flex;align-items:center;gap:9px;cursor:pointer;text-align:left;
+  background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 11px;
+  font-family:'Source Sans 3',sans-serif;font-size:14px;font-weight:600;color:var(--ink);
+  transition:border-color .14s,background .14s;
+}
+.opt-tile:focus-visible{outline:2px solid var(--depth);outline-offset:2px}
+.opt-tile i{width:4px;height:22px;border-radius:99px;background:var(--rule-2);flex:0 0 4px}
+.opt-tile[aria-pressed="true"]{border-color:var(--depth);background:var(--depth-l);color:var(--depth-d)}
+.opt-tile[aria-pressed="true"] i{background:var(--depth)}
+
+.mix{margin-top:8px;background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:14px}
+.mix-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:11px}
+.mix-top b{font-family:'Archivo',sans-serif;font-size:15px;font-weight:600;color:var(--ink)}
+.mix-top em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--depth)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:linear-gradient(90deg,var(--depth) 0 var(--pct,75%),#E3EAED var(--pct,75%) 100%)}
+input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:#E3EAED}
+input[type=range]::-moz-range-progress{height:6px;border-radius:99px;background:var(--depth)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--card);border:2px solid var(--depth);margin-top:-8px;box-shadow:0 1px 3px rgba(18,40,55,.25);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--card);border:2px solid var(--depth);box-shadow:0 1px 3px rgba(18,40,55,.25);cursor:pointer}
+input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:4px;border-radius:99px}
+.mix-ends{display:flex;justify-content:space-between;margin-top:7px;font-size:12px;color:var(--ink-3)}
+
+.note{
+  margin-top:12px;background:var(--plum-l);border:1px solid #DCCFE8;border-radius:13px;padding:13px 14px;
+  font-size:13.5px;line-height:1.5;color:var(--plum-d);
+}
+.note b{font-weight:700}
+.note .lab{color:#8C74A3;margin-bottom:5px;display:block}
+
+/* ── coach mark: a voice, not a cartoon ────────────────────── */
+.coachmark{width:26px;height:26px;border-radius:50%;background:var(--plum);flex:0 0 26px;display:grid;place-items:center}
+.coachrow{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.coachrow .lab{color:var(--plum)}
+
+/* ── lesson ────────────────────────────────────────────────── */
+.pips{display:flex;gap:4px;flex:1}
+.pips i{flex:1;height:4px;border-radius:99px;background:#DCE4E8}
+.pips i.done{background:var(--pulse)}
+.pips i.miss{background:var(--alarm)}
+.pips i.now{background:var(--depth)}
+.timer{height:3px;border-radius:99px;background:#DCE4E8;overflow:hidden;margin:0 18px 14px}
+.timer i{display:block;height:100%;width:100%;background:var(--pulse);transform-origin:left center}
+.timer.run i{animation:drain 20s linear forwards}
+@keyframes drain{0%,55%{background:var(--pulse)}80%{background:var(--clay)}95%,100%{background:var(--alarm)}100%{transform:scaleX(0)}}
+
+.vig{background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:15px;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.vig p{margin:0;font-size:17.5px;line-height:1.45;color:var(--ink);font-weight:400}
+.vig p b{font-weight:700}
+.vitals{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;padding-top:11px;border-top:1px solid var(--rule)}
+.vital{font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:4px 8px;border-radius:7px;background:var(--sunk);border:1px solid var(--rule);color:var(--ink-2)}
+.vital.hot{background:var(--clay-l);border-color:#EBD5BC;color:var(--clay-d)}
+.vig .extra{margin:9px 0 0;font-size:14px;color:var(--ink-2)}
+
+.opts{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.opt{
+  display:flex;align-items:center;gap:11px;width:100%;text-align:left;cursor:pointer;
+  background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 14px;
+  color:var(--ink);font-family:'Source Sans 3',sans-serif;font-size:15.5px;font-weight:600;
+  box-shadow:0 1px 2px rgba(18,40,55,.04);transition:background .13s,border-color .13s;
+}
+.opt:focus-visible{outline:2px solid var(--depth);outline-offset:2px}
+.opt .key{flex:0 0 auto;width:21px;height:21px;border-radius:6px;border:1px solid var(--rule-2);display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-3)}
+.opt .mk{margin-left:auto;display:none}
+.opt.sel{border-color:var(--depth);background:var(--depth-l)}
+.opt.sel .key{border-color:var(--depth);color:var(--depth)}
+.opt.right{border-color:var(--pulse);background:var(--pulse-l);color:var(--pulse-d)}
+.opt.right .key{border-color:var(--pulse);color:var(--pulse-d)}
+.opt.right .mk{display:block;color:var(--pulse)}
+.opt.wrong{border-color:var(--alarm);background:var(--alarm-l);color:var(--alarm-d)}
+.opt.wrong .key{border-color:var(--alarm);color:var(--alarm-d)}
+.opt.wrong .mk{display:block;color:var(--alarm)}
+.opts.locked .opt{cursor:default;box-shadow:none}
+
+.result{
+  margin-top:14px;background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:15px;
+  border-left:3px solid var(--pulse);animation:in .24s cubic-bezier(.22,.9,.3,1);
+}
+.result.bad{border-left-color:var(--alarm)}
+.result .rh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.result .rt{font-family:'Archivo',sans-serif;font-size:15px;font-weight:700;color:var(--pulse-d);letter-spacing:-.01em}
+.result.bad .rt{color:var(--alarm-d)}
+.result .xp{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-3)}
+.result p{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-2)}
+.result p+p{margin-top:9px}
+.result p b{color:var(--ink);font-weight:700}
+
+/* ── stats ─────────────────────────────────────────────────── */
+.figs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
+.fig{background:var(--card);padding:13px 8px;text-align:center}
+.fig b{display:block;font-family:'Archivo',sans-serif;font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.02em}
+.fig span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);display:block;margin-top:3px}
+
+/* ── chart ─────────────────────────────────────────────────── */
+.chart{background:var(--card);border:1px solid var(--rule);border-radius:15px;overflow:hidden;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.crow{padding:12px 14px;border-top:1px solid var(--rule)}
+.crow:first-child{border-top:0}
+.crow .v{font-size:14.5px;line-height:1.5;color:var(--ink);margin-top:4px}
+.crow .v .flag{background:var(--clay-l);color:var(--clay-d);border-radius:5px;padding:1px 4px;font-weight:600;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:99px;background:var(--card);border:1px solid var(--rule);color:var(--ink-2)}
+.chip.bad{background:var(--alarm-l);border-color:#ECCDD2;color:var(--alarm-d)}
+
+/* ── recording ─────────────────────────────────────────────── */
+.clock{font-family:'IBM Plex Mono',monospace;font-size:48px;font-weight:500;text-align:center;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.clock-sub{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
+.wave{display:flex;align-items:center;justify-content:center;gap:3px;height:76px;margin:16px 0 4px}
+.wave i{display:block;width:4px;border-radius:99px;background:var(--depth);height:5px;transition:height .09s linear;opacity:.85}
+.secs{background:var(--card);border:1px solid var(--rule);border-radius:15px;overflow:hidden;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.sec{display:flex;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid var(--rule);font-size:14px;color:var(--ink-3)}
+.sec:first-child{border-top:0}
+.sec .dot{width:17px;height:17px;border-radius:50%;background:var(--sunk);border:1px solid var(--rule-2);flex:0 0 17px;display:grid;place-items:center}
+.sec .t{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+.sec.done{color:var(--ink-2)} .sec.done .dot{background:var(--pulse);border-color:var(--pulse)}
+.sec.now{color:var(--ink);background:var(--clay-l);font-weight:600} .sec.now .dot{background:var(--clay);border-color:var(--clay)}
+
+.nudge{margin-top:11px;background:var(--clay-l);border:1px solid #EBD5BC;border-radius:13px;padding:13px 14px;font-size:13.5px;line-height:1.5;color:var(--clay-d)}
+.nudge b{font-weight:700}
+.nudge .coachmark{background:var(--clay)}
+.nudge .lab{color:var(--clay)}
+
+/* ── report ────────────────────────────────────────────────── */
+.grade{display:flex;align-items:center;gap:16px;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--clay);border-radius:15px;padding:16px;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.grade b{font-family:'Archivo',sans-serif;font-size:50px;font-weight:700;line-height:.85;color:var(--clay-d);letter-spacing:-.04em}
+.grade p{margin:0;font-size:15px;font-weight:600;color:var(--ink);line-height:1.35}
+.tracecard{margin-top:12px;background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:13px 13px 10px;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.tracecard svg{display:block;width:100%;height:58px;overflow:visible}
+.legend{display:flex;justify-content:space-between;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--ink-3)}
+.brow{padding:11px 0;border-top:1px solid var(--rule)}
+.brow:first-child{border-top:0}
+.btop{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:14px;font-weight:600;color:var(--ink)}
+.btop em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:400}
+.btrack{height:8px;border-radius:99px;background:#E3EAED;position:relative}
+.bfill{height:100%;border-radius:99px;background:var(--pulse)}
+.bfill.over{background:var(--clay)} .bfill.under{background:var(--alarm)}
+.btick{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:var(--ink-3)}
+.coachbox{margin-top:14px;background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--plum);border-radius:15px;padding:15px;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.coachbox p{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-2)}
+.coachbox p+p{margin-top:10px}
+.coachbox p b{color:var(--ink);font-weight:700}
+
+/* ── tab bar ───────────────────────────────────────────────── */
+.tabbar{flex:0 0 auto;display:flex;padding:7px 10px 0;border-top:1px solid var(--rule);background:var(--card)}
+.tab{flex:1;background:none;border:0;cursor:pointer;padding:5px 0 3px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-3);font-family:'Source Sans 3',sans-serif}
+.tab span{font-size:10px;font-weight:600}
+.tab[aria-current="true"]{color:var(--depth)}
+.tab:focus-visible{outline:2px solid var(--depth);outline-offset:-2px;border-radius:8px}
+.homebar{flex:0 0 auto;height:22px;display:grid;place-items:center;background:var(--card)}
+.homebar i{display:block;width:134px;height:5px;border-radius:99px;background:var(--ink);opacity:.24}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}}
+@media (max-width:460px){body{padding:14px 6px 40px}.device{width:100%;max-width:393px;height:min(852px,86vh);border-radius:40px}}
+</style>
+</head>
+<body>
+
+<div class="stage-head">
+  <h1>Cadence — interface study, v3</h1>
+  <p>iPhone 15 Pro · 393 × 852 · try the Focus screen first, then the rest updates to match</p>
+</div>
+
+<nav class="picker" id="picker" aria-label="Screens">
+  <button type="button" data-go="today" aria-current="true">Today</button>
+  <button type="button" data-go="focus">Focus</button>
+  <button type="button" data-go="lesson">Rapid DDx</button>
+  <button type="button" data-go="summary">Set complete</button>
+  <button type="button" data-go="case">Case brief</button>
+  <button type="button" data-go="record">Presenting</button>
+  <button type="button" data-go="report">Report card</button>
+</nav>
+
+<div class="device">
+ <div class="viewport">
+
+  <div class="statusbar">
+    <span class="mono">9:41</span>
+    <span class="glyphs">
+      <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" width="3" height="12" rx="1"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 11.2 5.6 8.4a3.8 3.8 0 0 1 4.8 0L8 11.2Zm0-5.6a6.6 6.6 0 0 0-4.3 1.6L2.2 5.4a9 9 0 0 1 11.6 0l-1.5 1.8A6.6 6.6 0 0 0 8 5.6ZM8 1.2c2.9 0 5.6 1 7.7 2.8l-1.4 1.7A10 10 0 0 0 8 3.4a10 10 0 0 0-6.3 2.3L.3 4A11.8 11.8 0 0 1 8 1.2Z"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" opacity=".4"/></svg>
+    </span>
+  </div>
+
+  <div class="screens" id="screens">
+
+  <!-- ═══════════ TODAY ═══════════ -->
+  <section class="screen is-active" id="s-today">
+    <div class="topbar">
+      <div class="ttl">
+        <h2 class="big">Today</h2>
+        <p>Saturday, 25 July</p>
+      </div>
+      <span style="display:flex;align-items:center;gap:5px;color:var(--pulse);font-family:'Archivo',sans-serif;font-weight:700;font-size:16px">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>12
+      </span>
+    </div>
+
+    <div class="scroll">
+      <button class="focusbar" type="button" data-go="focus">
+        <span class="swatch" id="focusSwatch"></span>
+        <span class="txt">
+          <b id="focusName">Internal Medicine</b>
+          <span id="focusSub">Rotation · 75% on block, 25% review</span>
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>
+      </button>
+
+      <p class="sect">Queued for you</p>
+
+      <button class="task" type="button" data-go="lesson">
+        <span class="ic" style="background:var(--pulse-l)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pulse)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>
+        </span>
+        <span class="bd">
+          <b>Rapid differentials</b>
+          <span id="ddxSub">12 one-liners · chest pain and dyspnea · ~6 min</span>
+        </span>
+        <svg class="go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>
+      </button>
+
+      <button class="task" type="button" data-go="case">
+        <span class="ic" style="background:var(--plum-l)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--plum)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>
+        </span>
+        <span class="bd">
+          <b>Present a case</b>
+          <span id="caseSub">Ms. Rivera, 68 · admission H&amp;P · 3 min</span>
+        </span>
+        <svg class="go" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>
+      </button>
+
+      <p class="sect">Rhythm</p>
+      <div class="strip">
+        <div class="strip-head"><b>12 days</b><span style="font-size:12.5px;color:var(--ink-3)">Today's still open</span></div>
+        <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-label="Six completed days, today still pending.">
+          <path class="trace" id="todayTrace" d=""></path>
+          <path class="trace pending" id="todayPending" d=""></path>
+        </svg>
+        <div class="days"><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span class="now">SUN</span></div>
+      </div>
+
+      <p class="sect" id="masteryTitle">Where you stand — internal medicine</p>
+      <div class="card" style="padding:13px 14px;box-shadow:0 1px 2px rgba(18,40,55,.04)">
+        <div class="mrow"><div class="mtop"><span>Volume overload</span><em>78%</em></div><div class="mtrack"><div class="mfill" style="width:78%"></div></div></div>
+        <div class="mrow"><div class="mtop"><span>Acute chest pain</span><em>64%</em></div><div class="mtrack"><div class="mfill mid" style="width:64%"></div></div></div>
+        <div class="mrow"><div class="mtop"><span>Wide-complex tachycardia</span><em>31%</em></div><div class="mtrack"><div class="mfill low" style="width:31%"></div></div></div>
+        <div class="mrow"><div class="mtop"><span>Naming the precipitant</span><em>41%</em></div><div class="mtrack"><div class="mfill low" style="width:41%"></div></div></div>
+      </div>
+      <p style="font-size:12.5px;line-height:1.5;color:var(--ink-3);margin:10px 2px 0">
+        The last two are presentation skills, not knowledge gaps. They come from your recorded takes, not the quiz.
+      </p>
+      <div style="height:8px"></div>
+    </div>
+
+    <nav class="tabbar" aria-label="Sections">
+      <button class="tab" type="button" aria-current="true" data-go="today">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8M5 10v10h14V10"/></svg><span>Today</span>
+      </button>
+      <button class="tab" type="button" data-go="lesson">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg><span>Drill</span>
+      </button>
+      <button class="tab" type="button" data-go="case">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg><span>Present</span>
+      </button>
+      <button class="tab" type="button" data-go="focus">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span>Focus</span>
+      </button>
+      <button class="tab" type="button" data-go="report">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Progress</span>
+      </button>
+    </nav>
+    <div class="homebar"><i></i></div>
+  </section>
+
+  <!-- ═══════════ FOCUS ═══════════ -->
+  <section class="screen" id="s-focus">
+    <div class="topbar">
+      <button class="iconb" type="button" data-go="today" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg>
+      </button>
+      <div class="ttl"><h2 class="big">Focus</h2></div>
+    </div>
+    <div class="scroll">
+      <p style="margin:0 0 14px;font-size:14.5px;line-height:1.5;color:var(--ink-2)">
+        Tell Cadence what you're in the middle of. Everything — the differentials, the cases, the presentation format you're graded against — narrows to match.
+      </p>
+
+      <div class="seg" role="tablist" id="modeSeg">
+        <button type="button" role="tab" aria-selected="false" data-mode="course">Systems course</button>
+        <button type="button" role="tab" aria-selected="true" data-mode="rotation">Rotation</button>
+      </div>
+
+      <div class="grid" id="focusGrid"></div>
+
+      <div class="mix">
+        <div class="mix-top">
+          <b>Mix</b>
+          <em id="mixVal">75% block · 25% review</em>
+        </div>
+        <input type="range" id="mix" min="0" max="100" step="5" value="75" aria-label="Proportion of items drawn from your current block">
+        <div class="mix-ends"><span>Everything I've seen</span><span>Only this block</span></div>
+        <p style="margin:11px 0 0;font-size:12.5px;line-height:1.5;color:var(--ink-3)">
+          Keep a little review in the mix. Pure block cramming feels efficient and is the fastest way to lose last month's material before the shelf.
+        </p>
+      </div>
+
+      <div class="note" id="formatNote">
+        <span class="lab">Presentation format</span>
+        <span id="formatText"></span>
+      </div>
+
+      <div style="height:8px"></div>
+    </div>
+    <div class="footpad">
+      <button class="btn" type="button" data-go="today" id="saveFocus">Save focus</button>
+    </div>
+    <div class="homebar"><i></i></div>
+  </section>
+
+  <!-- ═══════════ RAPID DDX ═══════════ -->
+  <section class="screen" id="s-lesson">
+    <div class="topbar" style="padding-bottom:10px">
+      <button class="iconb" type="button" data-go="today" aria-label="Leave set">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>
+      </button>
+      <span class="pips">
+        <i class="done"></i><i class="done"></i><i class="done"></i><i class="miss"></i><i class="now"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </span>
+      <span class="mono" style="font-size:14px;color:var(--ink);font-weight:500">340</span>
+    </div>
+    <div class="timer run" id="timer"><i></i></div>
+
+    <div class="scroll">
+      <p class="lab" style="margin:0 0 10px" id="lessonTopic">Item 5 of 12 · Pulmonary</p>
+
+      <div class="vig">
+        <p><b>41 F</b>, sudden pleuritic chest pain and shortness of breath, six days after a right total knee replacement.</p>
+        <div class="vitals">
+          <span class="vital hot">HR 118</span><span class="vital hot">RR 24</span><span class="vital hot">SpO₂ 91% RA</span><span class="vital">BP 112/70</span>
+        </div>
+        <p class="extra">Lungs clear. Right calf swollen and tender. ECG: sinus tachycardia.</p>
+      </div>
+
+      <div class="opts" id="opts">
+        <button class="opt" type="button" data-correct="true"><span class="key">A</span>Pulmonary embolism<span class="mk">✓</span></button>
+        <button class="opt" type="button"><span class="key">B</span>Community-acquired pneumonia<span class="mk">✕</span></button>
+        <button class="opt" type="button"><span class="key">C</span>Spontaneous pneumothorax<span class="mk">✕</span></button>
+        <button class="opt" type="button"><span class="key">D</span>Costochondritis<span class="mk">✕</span></button>
+      </div>
+
+      <div id="resultSlot"></div>
+      <div style="height:14px"></div>
+    </div>
+
+    <div class="footpad">
+      <button class="btn off" type="button" id="checkBtn">Check</button>
+    </div>
+    <div class="homebar"><i></i></div>
+  </section>
+
+  <!-- ═══════════ SET COMPLETE ═══════════ -->
+  <section class="screen" id="s-summary">
+    <div class="scroll" style="padding-top:16px">
+      <p class="lab">Set complete</p>
+      <h2 class="big" style="margin:6px 0 0;font-size:34px">11 of 12</h2>
+      <p style="margin:5px 0 0;font-size:14.5px;color:var(--ink-2)">Chest pain and dyspnea · your fastest set this week</p>
+
+      <div class="strip" style="margin-top:18px">
+        <div class="strip-head"><b>The set, item by item</b><span style="font-size:12.5px;color:var(--alarm)">1 miss</span></div>
+        <svg viewBox="0 0 320 50" preserveAspectRatio="none" aria-label="Twelve items drawn as a rhythm strip, with a flatline at item nine.">
+          <path class="trace" id="setTrace" d=""></path>
+          <path class="trace" id="setMiss" d="" style="stroke:var(--alarm)"></path>
+        </svg>
+      </div>
+
+      <div class="figs" style="margin-top:12px">
+        <div class="fig"><b>92%</b><span>Accuracy</span></div>
+        <div class="fig"><b>4.1s</b><span>Median</span></div>
+        <div class="fig"><b>+540</b><span>Points</span></div>
+      </div>
+
+      <p class="sect">Moved today</p>
+      <div class="card" style="padding:13px 14px">
+        <div class="mrow"><div class="mtop"><span>Acute chest pain</span><em style="color:var(--pulse)">64% → 71%</em></div><div class="mtrack"><div class="mfill" style="width:71%"></div></div></div>
+        <div class="mrow"><div class="mtop"><span>Wide-complex tachycardia</span><em style="color:var(--alarm)">38% → 31%</em></div><div class="mtrack"><div class="mfill low" style="width:31%"></div></div></div>
+      </div>
+
+      <div class="card" style="margin-top:12px;padding:15px;border-left:3px solid var(--alarm)">
+        <p class="lab" style="color:var(--alarm);margin:0 0 7px">The one you missed</p>
+        <p style="margin:0;font-size:14.5px;line-height:1.5;color:var(--ink)">Regular wide-complex tachycardia at 170 in a 72-year-old with a prior anterior MI. You chose SVT with aberrancy.</p>
+        <p style="margin:9px 0 0;font-size:13.5px;line-height:1.55;color:var(--ink-2)">Structural heart disease makes it VT until proven otherwise. That single line of history outweighs any morphology criterion you can apply to the strip.</p>
+      </div>
+      <div style="height:10px"></div>
+    </div>
+    <div class="footpad">
+      <button class="btn plum" type="button" data-go="case">Present a case next</button>
+      <button class="btn quiet" type="button" data-go="today">Back to today</button>
+    </div>
+    <div class="homebar"><i></i></div>
+  </section>
+
+  <!-- ═══════════ CASE BRIEF ═══════════ -->
+  <section class="screen" id="s-case">
+    <div class="topbar" style="padding-bottom:10px">
+      <button class="iconb" type="button" data-go="today" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg>
+      </button>
+      <span class="crumb" id="caseCrumb">Case 14 · Admission H&amp;P</span>
+      <span class="mono" style="background:var(--plum-l);color:var(--plum-d);font-size:12.5px;padding:4px 9px;border-radius:8px" id="caseTarget">3:00</span>
+    </div>
+    <div class="scroll">
+      <h2 class="big">Ms. Rivera, 68</h2>
+      <p style="font-size:16px;font-weight:600;color:var(--ink-2);margin:3px 0 14px">“I can't catch my breath.”</p>
+
+      <div class="chart">
+        <div class="crow"><span class="lab">History</span><div class="v">Four days of worsening breathlessness, now at rest. Two pillows to four. Six pounds up on the home scale. Ankles swelling. No chest pain, no fever, no cough.</div></div>
+        <div class="crow"><span class="lab">Past history</span><div class="v">Hypertension · Type 2 diabetes · Anterior MI 2019, LAD stent, EF 35% · CKD stage 3</div></div>
+        <div class="crow"><span class="lab">Medications</span><div class="v">Lisinopril 20 · Metoprolol succinate 50 · Atorvastatin 80 · Metformin 1000 BID · <span class="flag">furosemide 20, stopped a week ago — “it made me run to the bathroom all night”</span></div></div>
+        <div class="crow"><span class="lab">Exam</span><div class="v">
+          <div class="vitals" style="border:0;padding:0;margin:0 0 8px">
+            <span class="vital">T 37.0</span><span class="vital hot">HR 96</span><span class="vital hot">BP 158/88</span><span class="vital hot">RR 22</span><span class="vital hot">SpO₂ 92% RA</span>
+          </div>
+          JVP 12 cm · bibasilar crackles · S3 gallop · 2+ pitting edema to mid-shin</div></div>
+        <div class="crow"><span class="lab">Data</span><div class="v">BNP 1840 · Cr 1.9 (baseline 1.4) · Na 134 · troponin 0.03 flat ×2 · CXR cephalization with small bilateral effusions</div></div>
+      </div>
+
+      <div class="note" id="caseFormatNote" style="margin-top:12px">
+        <span class="lab">Graded against</span>
+        <span id="caseFormatText"></span>
+      </div>
+
+      <p class="sect">Rubric</p>
+      <div class="chips">
+        <span class="chip">Opening one-liner</span><span class="chip">Chronology</span><span class="chip">Pertinent negatives</span>
+        <span class="chip">Volume exam</span><span class="chip">Assessment</span><span class="chip">Plan</span><span class="chip">Pacing</span>
+      </div>
+
+      <p style="font-size:12.5px;line-height:1.5;color:var(--ink-3);margin:14px 2px 0">
+        Audio is transcribed on device and discarded when you leave. Practise on this patient — never a real one.
+      </p>
+      <div style="height:8px"></div>
+    </div>
+    <div class="footpad">
+      <button class="btn plum" type="button" data-go="record">Start presenting</button>
+    </div>
+    <div class="homebar"><i></i></div>
+  </section>
+
+  <!-- ═══════════ PRESENTING ═══════════ -->
+  <section class="screen" id="s-record">
+    <div class="topbar" style="padding-bottom:10px">
+      <button class="iconb" type="button" data-go="case" aria-label="Cancel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>
+      </button>
+      <span class="crumb">Presenting · Ms. Rivera</span>
+      <span class="mono" style="background:var(--alarm-l);color:var(--alarm-d);font-size:11.5px;padding:4px 9px;border-radius:8px">● REC</span>
+    </div>
+    <div class="scroll">
+      <div class="clock">01:47</div>
+      <div class="clock-sub">of 03:00 target</div>
+      <div class="wave" id="wave"></div>
+
+      <div class="secs">
+        <div class="sec done"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 7"/></svg></span>One-liner<span class="t">0:14</span></div>
+        <div class="sec now"><span class="dot"></span>History of present illness<span class="t">1:12</span></div>
+        <div class="sec"><span class="dot"></span>Past history &amp; meds<span class="t">—</span></div>
+        <div class="sec"><span class="dot"></span>Exam<span class="t">—</span></div>
+        <div class="sec"><span class="dot"></span>Data<span class="t">—</span></div>
+        <div class="sec"><span class="dot"></span>Assessment<span class="t">—</span></div>
+        <div class="sec"><span class="dot"></span>Plan<span class="t">—</span></div>
+      </div>
+
+      <div class="nudge">
+        <div class="coachrow">
+          <span class="coachmark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>
+          </span>
+          <span class="lab">Coach</span>
+        </div>
+        <b>Your history is running long.</b> That's 1:12 on a section that should take about 55 seconds. Start moving toward the medications.
+      </div>
+      <div style="height:8px"></div>
+    </div>
+    <div class="footpad">
+      <button class="btn alarm" type="button" data-go="report">Stop and grade</button>
+    </div>
+    <div class="homebar"><i></i></div>
+  </section>
+
+  <!-- ═══════════ REPORT ═══════════ -->
+  <section class="screen" id="s-report">
+    <div class="topbar" style="padding-bottom:10px">
+      <button class="iconb" type="button" data-go="case" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 7 12l8 8"/></svg>
+      </button>
+      <span class="crumb">Take 1 · Case 14</span>
+      <span class="mono" style="font-size:12.5px;color:var(--ink-3)">3:24</span>
+    </div>
+    <div class="scroll">
+      <div class="grade">
+        <b>78</b>
+        <p>Solid presentation.<br>You buried the lead.</p>
+      </div>
+
+      <div class="tracecard">
+        <span class="lab">Where your three minutes went</span>
+        <svg viewBox="0 0 320 58" preserveAspectRatio="none" id="reportSvg" style="margin-top:9px" aria-label="Your presentation drawn as a rhythm strip, one segment per section. The history runs more than twice its target; assessment and plan are compressed to a stump."></svg>
+        <div class="legend">
+          <span>ONE-LINER</span><span style="color:var(--clay)">HPI 1:52</span><span>PMH · EXAM</span><span style="color:var(--alarm)">A&amp;P 0:22</span>
+        </div>
+      </div>
+
+      <p class="sect">Pacing against target</p>
+      <div class="card" style="padding:12px 14px">
+        <div class="brow">
+          <div class="btop"><span>History of present illness</span><em style="color:var(--clay-d)">1:52 · 2× over</em></div>
+          <div class="btrack"><div class="bfill over" style="width:100%"></div><span class="btick" style="left:49%"></span></div>
+        </div>
+        <div class="brow">
+          <div class="btop"><span>Past history, meds, exam, data</span><em style="color:var(--pulse-d)">0:56 · on target</em></div>
+          <div class="btrack"><div class="bfill" style="width:62%"></div><span class="btick" style="left:66%"></span></div>
+        </div>
+        <div class="brow">
+          <div class="btop"><span>Assessment and plan</span><em style="color:var(--alarm-d)">0:22 · a third</em></div>
+          <div class="btrack"><div class="bfill under" style="width:22%"></div><span class="btick" style="left:64%"></span></div>
+        </div>
+      </div>
+
+      <p class="sect">Delivery</p>
+      <div class="figs">
+        <div class="fig"><b>168</b><span>Words/min</span></div>
+        <div class="fig"><b>14</b><span>Fillers</span></div>
+        <div class="fig"><b>9/11</b><span>Elements</span></div>
+      </div>
+
+      <p class="sect">You didn't say</p>
+      <div class="chips">
+        <span class="chip bad">Why she decompensated now</span>
+        <span class="chip bad">No chest pain, no fever</span>
+      </div>
+
+      <div class="coachbox">
+        <div class="coachrow">
+          <span class="coachmark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>
+          </span>
+          <span class="lab">Coach</span>
+        </div>
+        <p>You did mention the furosemide — at 1:58, inside the medication list, in the same breath as her atorvastatin dose.</p>
+        <p><b>That is the whole case.</b> Decompensated heart failure with a known, reversible, teachable precipitant. Put it in your one-liner and again in your assessment, and this take scores in the nineties.</p>
+      </div>
+      <div style="height:10px"></div>
+    </div>
+    <div class="footpad">
+      <button class="btn plum" type="button" data-go="case">Present it again</button>
+      <button class="btn quiet" type="button" data-go="today">Play back my take</button>
+    </div>
+    <div class="homebar"><i></i></div>
+  </section>
+
+  </div>
+ </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── ECG generator ─────────────────────────────────────── */
+  function beat(x,bw,mid,A){
+    return ' L '+(x+bw*0.10)+' '+mid
+      +' Q '+(x+bw*0.16)+' '+(mid-A*0.24)+' '+(x+bw*0.22)+' '+mid
+      +' L '+(x+bw*0.32)+' '+mid
+      +' L '+(x+bw*0.36)+' '+(mid+A*0.16)
+      +' L '+(x+bw*0.42)+' '+(mid-A*0.94)
+      +' L '+(x+bw*0.48)+' '+(mid+A*0.36)
+      +' L '+(x+bw*0.545)+' '+mid
+      +' Q '+(x+bw*0.66)+' '+(mid-A*0.42)+' '+(x+bw*0.79)+' '+mid
+      +' L '+(x+bw)+' '+mid;
+  }
+  function ecg(x0,w,h,n,o){
+    o=o||{}; var flat=o.flat||[], amp=o.amp||1, bw=w/n, mid=h/2, A=(h/2)*amp;
+    var d='M '+x0+' '+mid;
+    for(var i=0;i<n;i++){
+      var x=x0+i*bw;
+      if(flat.indexOf(i)>-1){ d+=' L '+(x+bw)+' '+mid; continue; }
+      d+=beat(x,bw,mid,A);
+    }
+    return d;
+  }
+  var el;
+  if((el=document.getElementById('todayTrace'))) el.setAttribute('d', ecg(0,320*(6/7),50,6,{amp:.8}));
+  if((el=document.getElementById('todayPending'))) el.setAttribute('d','M '+(320*6/7)+' 25 L 320 25');
+  if((el=document.getElementById('setTrace'))) el.setAttribute('d', ecg(0,320,50,12,{amp:.78,flat:[8]}));
+  if((el=document.getElementById('setMiss'))) el.setAttribute('d','M '+(320*8/12)+' 25 L '+(320*9/12)+' 25');
+
+  var rs=document.getElementById('reportSvg');
+  if(rs){
+    var segs=[{s:14,c:'var(--depth)'},{s:112,c:'var(--clay)'},{s:56,c:'var(--pulse)'},{s:22,c:'var(--alarm)'}];
+    var total=204,x=0,W=320,H=58,NS='http://www.w3.org/2000/svg';
+    segs.forEach(function(g){
+      var w=W*(g.s/total), n=Math.max(1,Math.round(g.s/13));
+      var p=document.createElementNS(NS,'path');
+      p.setAttribute('d',ecg(x,w,H,n,{amp:.86}));
+      p.setAttribute('class','trace');
+      p.setAttribute('style','stroke:'+g.c);
+      rs.appendChild(p); x+=w;
+      if(x<W){
+        var l=document.createElementNS(NS,'line');
+        l.setAttribute('x1',x); l.setAttribute('x2',x); l.setAttribute('y1',5); l.setAttribute('y2',H-5);
+        l.setAttribute('stroke','#DCE4E8');
+        rs.appendChild(l);
+      }
+    });
+  }
+
+  /* ── focus data ────────────────────────────────────────────
+     Presentation format is rotation-specific — a surgery update
+     and an IM admission H&P are different artifacts, and grading
+     them against the same rubric would be worse than useless. */
+  var COURSES = [
+    {id:'cv',   name:'Cardiovascular', topic:'chest pain, dyspnea, syncope'},
+    {id:'pulm', name:'Pulmonary',      topic:'cough, hypoxemia, wheeze'},
+    {id:'renal',name:'Renal',          topic:'AKI, electrolytes, acid–base'},
+    {id:'gi',   name:'GI & Liver',     topic:'abdominal pain, jaundice, GI bleed'},
+    {id:'endo', name:'Endocrine',      topic:'thyroid, diabetes, adrenal'},
+    {id:'neuro',name:'Neuroscience',   topic:'weakness, headache, altered mental status'},
+    {id:'heme', name:'Heme & Onc',     topic:'anemia, cytopenias, masses'},
+    {id:'id',   name:'Infectious Dis.',topic:'fever, sepsis, meningitis'},
+    {id:'msk',  name:'MSK & Rheum',    topic:'joint pain, rash, myopathy'},
+    {id:'repro',name:'Reproductive',   topic:'pelvic pain, bleeding, pregnancy'}
+  ];
+  var ROTATIONS = [
+    {id:'im',   name:'Internal Med',  topic:'chest pain and dyspnea',   fmt:'A 3-minute admission H&P. Full chronology, pertinent negatives, then an assessment that commits to one problem representation before the plan.', target:'3:00', label:'Admission H&P'},
+    {id:'surg', name:'Surgery',       topic:'acute abdomen, post-op',   fmt:'A 90-second post-op update. Post-op day, overnight events, vitals, ins and outs, wound and drains, then today\'s plan. Nobody wants the childhood history.', target:'1:30', label:'Post-op update'},
+    {id:'peds', name:'Pediatrics',    topic:'fever, rash, wheeze',      fmt:'A 3-minute H&P with birth history, feeding, growth, development and immunizations woven in — and weight in kilograms, because every dose depends on it.', target:'3:00', label:'Peds H&P'},
+    {id:'obgyn',name:'OB/GYN',        topic:'bleeding, pelvic pain',    fmt:'A 2-minute presentation opening with GTPAL and accurate dating. Say the gestational age in the first sentence or the rest won\'t land.', target:'2:00', label:'OB presentation'},
+    {id:'psych',name:'Psychiatry',    topic:'mood, psychosis, agitation',fmt:'A 4-minute presentation. The mental status exam is the physical exam here — describe it, don\'t summarise it — and finish with an explicit risk assessment.', target:'4:00', label:'Psych intake'},
+    {id:'neur', name:'Neurology',     topic:'weakness, seizure, stroke',fmt:'A 3-minute presentation that localises before it diagnoses. Say where the lesion is, then what it is. Time of last known well goes in the one-liner.', target:'3:00', label:'Neuro H&P'},
+    {id:'em',   name:'Emergency',     topic:'undifferentiated complaints',fmt:'A 60-second presentation, disposition first. Sick or not sick, what you need, where they\'re going. Everything else is on request.', target:'1:00', label:'ED presentation'},
+    {id:'fm',   name:'Family Med',    topic:'clinic complaints, chronic care',fmt:'A 2-minute clinic presentation. Interval history since the last visit, the agenda they came with, and health maintenance that\'s actually due.', target:'2:00', label:'Clinic presentation'}
+  ];
+  var COURSE_FMT = 'Preclinical: cases run untimed, and the illness script is revealed after each answer. Timed presentation coaching switches on when you set a rotation.';
+
+  var state = {mode:'rotation', id:'im', mix:75};
+
+  var grid=document.getElementById('focusGrid'),
+      seg=document.getElementById('modeSeg'),
+      mix=document.getElementById('mix'),
+      mixVal=document.getElementById('mixVal'),
+      formatText=document.getElementById('formatText');
+
+  function list(){ return state.mode==='rotation' ? ROTATIONS : COURSES; }
+  function current(){
+    var l=list();
+    for(var i=0;i<l.length;i++) if(l[i].id===state.id) return l[i];
+    return l[0];
+  }
+
+  function renderGrid(){
+    grid.innerHTML='';
+    list().forEach(function(item){
+      var b=document.createElement('button');
+      b.type='button'; b.className='opt-tile';
+      b.setAttribute('aria-pressed', item.id===state.id ? 'true':'false');
+      b.innerHTML='<i></i>'+item.name;
+      b.addEventListener('click',function(){
+        state.id=item.id; renderGrid(); renderFormat();
+      });
+      grid.appendChild(b);
+    });
+  }
+  function renderFormat(){
+    var c=current();
+    formatText.textContent = state.mode==='rotation' ? c.fmt : COURSE_FMT;
+  }
+  function renderMix(){
+    mix.style.setProperty('--pct', state.mix+'%');
+    mixVal.textContent = state.mix+'% block · '+(100-state.mix)+'% review';
+  }
+
+  seg.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    state.mode=b.dataset.mode;
+    state.id = list()[0].id;
+    Array.prototype.forEach.call(seg.querySelectorAll('button'),function(x){
+      x.setAttribute('aria-selected', x===b ? 'true':'false');
+    });
+    renderGrid(); renderFormat();
+  });
+  mix.addEventListener('input',function(){ state.mix=+mix.value; renderMix(); });
+
+  /* push the focus selection out into the rest of the app */
+  function applyFocus(){
+    var c=current(), rot=state.mode==='rotation';
+    document.getElementById('focusName').textContent=c.name;
+    document.getElementById('focusSub').textContent=(rot?'Rotation':'Systems course')+' · '+state.mix+'% on block, '+(100-state.mix)+'% review';
+    document.getElementById('focusSwatch').style.background = rot ? 'var(--depth)' : 'var(--pulse)';
+    document.getElementById('ddxSub').textContent='12 one-liners · '+c.topic+' · ~6 min';
+    document.getElementById('lessonTopic').textContent='Item 5 of 12 · '+c.name;
+    document.getElementById('masteryTitle').textContent='Where you stand — '+c.name.toLowerCase();
+    if(rot){
+      document.getElementById('caseSub').textContent='Ms. Rivera, 68 · '+c.label.toLowerCase()+' · '+c.target.replace(/^0/,'')+' min';
+      document.getElementById('caseCrumb').innerHTML='Case 14 · '+c.label;
+      document.getElementById('caseTarget').textContent=c.target;
+      document.getElementById('caseFormatText').textContent=c.fmt;
+    } else {
+      document.getElementById('caseSub').textContent='Ms. Rivera, 68 · untimed reasoning drill';
+      document.getElementById('caseCrumb').textContent='Case 14 · Untimed';
+      document.getElementById('caseTarget').textContent='—';
+      document.getElementById('caseFormatText').textContent=COURSE_FMT;
+    }
+  }
+  document.getElementById('saveFocus').addEventListener('click',applyFocus);
+
+  /* ── routing ───────────────────────────────────────────── */
+  var screens=document.getElementById('screens'), picker=document.getElementById('picker'), waveTimer=null;
+  function show(id){
+    var i,l=screens.querySelectorAll('.screen');
+    for(i=0;i<l.length;i++) l[i].classList.toggle('is-active', l[i].id==='s-'+id);
+    var pb=picker.querySelectorAll('button');
+    for(i=0;i<pb.length;i++) pb[i].setAttribute('aria-current', pb[i].dataset.go===id?'true':'false');
+    var tb=document.querySelectorAll('.tab');
+    for(i=0;i<tb.length;i++) tb[i].setAttribute('aria-current', tb[i].dataset.go===id?'true':'false');
+    var sc=document.querySelector('#s-'+id+' .scroll'); if(sc) sc.scrollTop=0;
+    if(id==='lesson') resetLesson();
+    if(id==='record'){ startWave(); } else { stopWave(); }
+  }
+  document.addEventListener('click',function(e){
+    var t=e.target.closest && e.target.closest('[data-go]');
+    if(t && !t.disabled) show(t.dataset.go);
+  });
+
+  /* ── lesson ────────────────────────────────────────────── */
+  var opts=document.getElementById('opts'), checkBtn=document.getElementById('checkBtn'),
+      slot=document.getElementById('resultSlot'), timer=document.getElementById('timer'), picked=null;
+
+  function resetLesson(){
+    if(!opts) return;
+    opts.classList.remove('locked');
+    var all=opts.querySelectorAll('.opt');
+    for(var i=0;i<all.length;i++) all[i].className='opt';
+    picked=null; slot.innerHTML='';
+    checkBtn.className='btn off'; checkBtn.textContent='Check'; checkBtn.disabled=false;
+    timer.classList.remove('run'); void timer.offsetWidth;
+    if(!reduce) timer.classList.add('run');
+  }
+  opts.addEventListener('click',function(e){
+    var b=e.target.closest('.opt');
+    if(!b||opts.classList.contains('locked')) return;
+    var all=opts.querySelectorAll('.opt');
+    for(var i=0;i<all.length;i++) all[i].classList.remove('sel');
+    b.classList.add('sel'); picked=b;
+    checkBtn.className='btn';
+  });
+  checkBtn.addEventListener('click',function(){
+    if(!picked||opts.classList.contains('locked')) return;
+    opts.classList.add('locked'); timer.classList.remove('run');
+    var right=picked.dataset.correct==='true';
+    var all=opts.querySelectorAll('.opt');
+    for(var i=0;i<all.length;i++){
+      all[i].classList.remove('sel');
+      if(all[i].dataset.correct==='true') all[i].classList.add('right');
+      else if(all[i]===picked) all[i].classList.add('wrong');
+    }
+    slot.innerHTML =
+      '<div class="result'+(right?'':' bad')+'">'+
+        '<div class="rh"><span class="rt">'+(right?'Pulmonary embolism':'It was pulmonary embolism')+'</span>'+
+        '<span class="xp">'+(right?'+45 · 2.4s':'no points')+'</span></div>'+
+        '<p>Surgery in the last four weeks, a swollen unilateral calf, and hypoxemia with a <b>clear chest</b>. That combination is the discriminator — pneumonia and pneumothorax both change the lung exam.</p>'+
+        '<p><b>Wells 9, high probability.</b> Go straight to CT pulmonary angiography; a D-dimer here can only mislead you.</p>'+
+      '</div>';
+    checkBtn.className='btn pulse'; checkBtn.textContent='Next item';
+    checkBtn.setAttribute('data-go','summary');
+  });
+
+  /* ── waveform ──────────────────────────────────────────── */
+  var wave=document.getElementById('wave');
+  if(wave) for(var i=0;i<42;i++) wave.appendChild(document.createElement('i'));
+  function startWave(){
+    if(!wave||reduce||waveTimer) return;
+    var bars=wave.querySelectorAll('i'), t=0;
+    waveTimer=setInterval(function(){
+      t+=0.35;
+      for(var i=0;i<bars.length;i++){
+        var env=Math.sin(i/bars.length*Math.PI);
+        var v=Math.abs(Math.sin(t+i*0.42))*0.55+Math.random()*0.45;
+        bars[i].style.height=Math.max(5,v*env*70)+'px';
+      }
+    },90);
+  }
+  function stopWave(){ if(waveTimer){ clearInterval(waveTimer); waveTimer=null; } }
+
+  renderGrid(); renderFormat(); renderMix(); applyFocus(); resetLesson();
+})();
+</script>
+</body>
+</html>

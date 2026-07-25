@@ -1,0 +1,24 @@
+{
+  "name": "cadence",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cadence V1 — rapid differential diagnosis drills for clinical trainees",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "node e2e/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "ts-fsrs": "^5.4.1"
+  }
+}

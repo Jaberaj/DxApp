@@ -1,0 +1,116 @@
+/* ══════════════════════════════════════════════════════════════
+   State store.
+   Guest-first: everything lives in localStorage so a learner can
+   do full sets before any account exists. The whole learner state
+   is small JSON by design — when accounts arrive (V1 sign-in),
+   this exact payload becomes the sync document.
+   ══════════════════════════════════════════════════════════════ */
+
+import type { AppState, SessionItemResult, SessionRecord, Settings } from '../types';
+import { conceptById } from '../content/bank';
+import { applyResult, newTopicMastery } from '../engine/mastery';
+import { gradeFor, newSchedule, review } from '../engine/scheduler';
+import { completeSet, newStreak, type StreakUpdate } from '../engine/streak';
+
+const STORAGE_KEY = 'cadence.v1';
+const STATE_VERSION = 1;
+
+export function defaultSettings(mode: 'course' | 'rotation'): Settings {
+  // Course mode: timer off by default. Rotation: 20s on.
+  return { timerSeconds: mode === 'rotation' ? 20 : 0, dailyGoal: 1 };
+}
+
+export function defaultState(): AppState {
+  return {
+    version: STATE_VERSION,
+    focus: { mode: 'rotation', id: 'im', mixPercent: 75 },
+    settings: defaultSettings('rotation'),
+    schedules: {},
+    mastery: {},
+    streak: newStreak(),
+    sessions: [],
+    totalPoints: 0,
+  };
+}
+
+export function loadState(storage: Pick<Storage, 'getItem'> = localStorage): AppState {
+  try {
+    const raw = storage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw) as AppState;
+    if (parsed.version !== STATE_VERSION) return defaultState();
+    return { ...defaultState(), ...parsed };
+  } catch {
+    return defaultState();
+  }
+}
+
+export function saveState(state: AppState, storage: Pick<Storage, 'setItem'> = localStorage): void {
+  storage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+export interface CommitOutcome {
+  state: AppState;
+  streakUpdate: StreakUpdate;
+  /** per-topic mastery before → after, for the "Moved today" panel */
+  masteryMoves: { topic: string; before: number; after: number }[];
+}
+
+/**
+ * Fold a finished session into learner state in one atomic step:
+ * FSRS review per concept, mastery per topic, streak, points,
+ * session history.
+ */
+export function commitSession(
+  state: AppState,
+  results: SessionItemResult[],
+  startedAt: Date,
+  now: Date,
+): CommitOutcome {
+  const schedules = { ...state.schedules };
+  const mastery = { ...state.mastery };
+  const before: Record<string, number> = {};
+
+  for (const r of results) {
+    const concept = conceptById(r.conceptId);
+    if (!concept) continue;
+
+    const sched = schedules[r.conceptId] ?? newSchedule(r.conceptId, now);
+    const grade = gradeFor(r.correct, r.elapsedMs, state.settings.timerSeconds);
+    schedules[r.conceptId] = review(sched, r.itemId, r.correct, grade, now);
+
+    const m = mastery[concept.topic] ?? newTopicMastery(concept.topic, concept.system, now);
+    if (!(concept.topic in before)) before[concept.topic] = Math.round(m.score);
+    mastery[concept.topic] = applyResult(m, r.correct, now);
+  }
+
+  const totalPoints = results.reduce((sum, r) => sum + r.points, 0);
+  const record: SessionRecord = {
+    startedAt: startedAt.toISOString(),
+    finishedAt: now.toISOString(),
+    focus: { ...state.focus },
+    results,
+    totalPoints,
+  };
+
+  const streakUpdate = completeSet(state.streak, state.settings.dailyGoal, now);
+
+  const masteryMoves = Object.entries(before).map(([topic, b]) => ({
+    topic,
+    before: b,
+    after: Math.round(mastery[topic].score),
+  }));
+
+  return {
+    state: {
+      ...state,
+      schedules,
+      mastery,
+      streak: streakUpdate.streak,
+      sessions: [...state.sessions, record].slice(-200),
+      totalPoints: state.totalPoints + totalPoints,
+    },
+    streakUpdate,
+    masteryMoves,
+  };
+}
