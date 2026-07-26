@@ -5,37 +5,34 @@ and reports coverage against the taxonomy.*
 
 ## Census
 
-- Vignettes (items) in: **56**
-- Concepts out: **48**
+- Vignettes (items) in: **134**
+- Concepts out: **125**
 - Vignettes missing `legacyItemId` (orphan risk): **0**
 - Concepts not placed in the taxonomy: **0**
-- Concepts UNREVIEWED (pending physician sign-off): **48/48**
+- Concepts UNREVIEWED (pending physician sign-off): **125/125**
 
 ## Board-level distribution (vignettes; may serve several)
 
-- Step 1: 35 · Step 2 CK: 56 · Step 3: 36
+- Step 1: 93 · Step 2 CK: 134 · Step 3: 109
 
 ## Taxonomy coverage
 
 - Subtopics defined: **108** across 14 systems
-- Subtopics with ≥1 concept: **25**
-- Empty subtopics (visible gaps to fill): **83**
+- Subtopics with ≥1 concept: **61**
+- Empty subtopics (visible gaps to fill): **47**
 
 ### Empty subtopics by system
 
 - **Cardiovascular**: cv.htn-lipids
 - **Pulmonary**: pulm.parenchyma, pulm.critical, pulm.neoplasm, pulm.vascular
-- **Renal & Genitourinary**: renal.ckd, renal.acid-base, renal.tubulointerstitial, renal.stones-uti, renal.gu
-- **GI & Hepatobiliary**: gi.upper, gi.lower, gi.biliary, gi.bleed, gi.infectious, gi.neoplasm, gi.nutrition
-- **Endocrine**: endo.thyroid, endo.adrenal, endo.pituitary, endo.calcium, endo.repro-endo, endo.lipid-metab
-- **Neuroscience**: neuro.stroke, neuro.seizure, neuro.headache, neuro.neuromuscular, neuro.movement, neuro.demyelinating, neuro.infection-neuro, neuro.altered
+- **GI & Hepatobiliary**: gi.infectious, gi.neoplasm, gi.nutrition
+- **Endocrine**: endo.repro-endo, endo.lipid-metab
 - **Heme & Onc**: heme.anemia, heme.hemostasis, onc.solid, heme.transfusion
-- **Infectious Disease**: id.sepsis, id.gi-id, id.uti-id, id.cns-id, id.skin-soft, id.hiv-oi, id.zoonotic
-- **MSK & Rheumatology**: rheum.crystal, rheum.vasculitis, rheum.myopathy, msk.spine-soft, msk.bone, msk.infection
-- **Dermatology**: derm.infections, derm.inflammatory, derm.bullous, derm.neoplasm, derm.systemic, derm.hypersensitivity
-- **Psychiatry**: psych.mood, psych.anxiety, psych.psychotic, psych.substance, psych.neurocognitive, psych.somatic-personality, psych.child-psych, psych.eating
-- **Reproductive**: repro.obstetrics, repro.gyn-benign, repro.gyn-onc, repro.breast, repro.infertility, repro.sti, repro.contraception
-- **Multisystem & Critical Care**: multi.shock, multi.toxicology, multi.acid-base-fluids, multi.nutrition-vitamin, multi.geriatrics, multi.preventive, multi.genetics
+- **Infectious Disease**: id.sepsis, id.gi-id, id.uti-id, id.cns-id, id.skin-soft, id.zoonotic
+- **Dermatology**: derm.inflammatory, derm.systemic, derm.hypersensitivity
+- **Psychiatry**: psych.anxiety, psych.psychotic, psych.neurocognitive, psych.somatic-personality, psych.child-psych, psych.eating
+- **Reproductive**: repro.gyn-onc, repro.breast, repro.infertility, repro.sti, repro.contraception
+- **Multisystem & Critical Care**: multi.shock, multi.acid-base-fluids, multi.nutrition-vitamin, multi.geriatrics, multi.preventive, multi.genetics
 - **Pediatrics**: peds.neonatal, peds.development, peds.peds-infectious, peds.peds-respiratory, peds.congenital-genetic, peds.peds-gi, peds.vaccines
 
 ## Validation

@@ -10,10 +10,13 @@ import type { AppState, BoardLevel } from '../src/types';
 const NOW = new Date('2026-07-25T12:00:00Z');
 const rng = () => 0.42;
 
-function filterFor(id: 'rapid_ddx' | 'ecg' | 'buzzword', board: BoardLevel | 'all' = 'all'): SetFilter {
+function filterFor(id: 'rapid_ddx' | 'rapid_tx' | 'ecg' | 'buzzword', board: BoardLevel | 'all' = 'all'): SetFilter {
   const g = gameById(id);
   return { types: g.itemTypes, board, setSize: g.setSize };
 }
+
+/** conceptId → taxonomy subtopic, for asserting the subtopic filter. */
+const SUBTOPIC_OF = new Map(CONCEPTS.map((c) => [c.conceptId, c.subtopic]));
 
 describe('session builder — games', () => {
   it('the DDx game builds a full set of unique concepts', () => {
@@ -56,11 +59,53 @@ describe('session builder — board scope', () => {
   });
 });
 
+describe('session builder — subtopic narrowing', () => {
+  function courseState(system: string, subtopics: string[]): AppState {
+    return {
+      ...defaultState(),
+      focus: { mode: 'course', id: system, mixPercent: 100, boards: 'all', subtopics },
+    };
+  }
+
+  it('a single selected subtopic returns only that subtopic\'s concepts', () => {
+    const state = courseState('renal', ['renal.aki']);
+    const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), rng);
+    expect(set.length).toBeGreaterThan(0);
+    for (const item of set) {
+      expect(SUBTOPIC_OF.get(item.conceptId), item.itemId).toBe('renal.aki');
+    }
+  });
+
+  it('multiple selected subtopics stay within the selected set (never leak systems)', () => {
+    const chosen = ['renal.aki', 'renal.electrolytes'];
+    const state = courseState('renal', chosen);
+    const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), Math.random);
+    for (const item of set) {
+      expect(chosen, item.itemId).toContain(SUBTOPIC_OF.get(item.conceptId));
+    }
+  });
+
+  it('a sparse subtopic yields a short, honest set rather than off-topic padding', () => {
+    // pick a subtopic with few concepts; the set must not exceed what exists
+    const state = courseState('renal', ['renal.aki']);
+    const inSub = CONCEPTS.filter((c) => c.subtopic === 'renal.aki').length;
+    const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), rng);
+    expect(set.length).toBeLessThanOrEqual(inSub);
+  });
+
+  it('no selection = the whole system, as before', () => {
+    const state = courseState('neuro', []);
+    const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), rng);
+    expect(set.length).toBeGreaterThan(0);
+    for (const item of set) expect(item.tags.system, item.itemId).toBe('neuro');
+  });
+});
+
 describe('session builder — focus scoping', () => {
   it('at 100% block, every item is on block for the focus', () => {
     const state: AppState = {
       ...defaultState(),
-      focus: { mode: 'course', id: 'pulmonary', mixPercent: 100, boards: 'all' },
+      focus: { mode: 'course', id: 'pulmonary', mixPercent: 100, boards: 'all', subtopics: [] },
     };
     const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), rng);
     expect(set.length).toBeGreaterThan(0);
@@ -70,7 +115,7 @@ describe('session builder — focus scoping', () => {
   it('the review share draws from previously seen out-of-block concepts', () => {
     const state: AppState = {
       ...defaultState(),
-      focus: { mode: 'course', id: 'pulmonary', mixPercent: 75, boards: 'all' },
+      focus: { mode: 'course', id: 'pulmonary', mixPercent: 75, boards: 'all', subtopics: [] },
     };
     for (const id of ['prerenal-vs-atn', 'hyperk-first']) {
       state.schedules[id] = review(newSchedule(id, NOW), `${id}-x`, true, Rating.Good, new Date('2026-07-01T12:00:00Z'));
@@ -85,7 +130,7 @@ describe('session builder — focus scoping', () => {
 
   it('retired variants are skipped so the concept resurfaces through a sibling', () => {
     const state = defaultState();
-    state.focus = { mode: 'course', id: 'pulmonary', mixPercent: 100, boards: 'all' };
+    state.focus = { mode: 'course', id: 'pulmonary', mixPercent: 100, boards: 'all', subtopics: [] };
     let sched = newSchedule('pe-recognition', NOW);
     sched = review(sched, 'pe-recognition-1', true, Rating.Good, NOW);
     sched = review(sched, 'pe-recognition-1', true, Rating.Good, NOW);

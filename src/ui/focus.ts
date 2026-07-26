@@ -5,8 +5,9 @@
    ══════════════════════════════════════════════════════════════ */
 
 import type { Ctx } from './app';
-import type { BoardLevel, FocusMode } from '../types';
-import { BOARD_LEVELS, COURSES, ROTATIONS } from '../content/bank';
+import type { BoardLevel, FocusMode, System } from '../types';
+import { BOARD_LEVELS, COURSES, ROTATIONS, conceptCountBySubtopic } from '../content/bank';
+import { systemNode } from '../content/taxonomy';
 import { defaultSettings } from '../state/store';
 import { el, esc } from './dom';
 
@@ -20,6 +21,7 @@ export function renderFocus(ctx: Ctx): HTMLElement {
     id: ctx.state.focus.id,
     mixPercent: ctx.state.focus.mixPercent,
     boards: ctx.state.focus.boards as BoardLevel | 'all',
+    subtopics: [...ctx.state.focus.subtopics],
     timerSeconds: ctx.state.settings.timerSeconds,
     dailyGoal: ctx.state.settings.dailyGoal,
   };
@@ -44,6 +46,12 @@ export function renderFocus(ctx: Ctx): HTMLElement {
         ).join('')}
       </div>
       <p class="setting-note" id="boardNote"></p>
+
+      <div id="subtopicSection">
+        <p class="sect">Subtopics<span class="match-count" id="matchCount"></span></p>
+        <p class="setting-note">Narrow to specific subtopics, or leave all off for the whole system. Greyed subtopics have no content yet.</p>
+        <div class="subtopic-chips" id="subtopicChips"></div>
+      </div>
 
       <div class="mix">
         <div class="mix-top"><b>Mix</b><em id="mixVal"></em></div>
@@ -87,6 +95,9 @@ export function renderFocus(ctx: Ctx): HTMLElement {
   const modeNote = root.querySelector('#modeNote')!;
   const boardSeg = root.querySelector('#boardSeg')!;
   const boardNote = root.querySelector('#boardNote')!;
+  const subtopicSection = root.querySelector('#subtopicSection') as HTMLElement;
+  const subtopicChips = root.querySelector('#subtopicChips')!;
+  const matchCount = root.querySelector('#matchCount')!;
 
   function options() {
     return draft.mode === 'rotation' ? ROTATIONS : COURSES;
@@ -106,7 +117,9 @@ export function renderFocus(ctx: Ctx): HTMLElement {
       );
       tile.addEventListener('click', () => {
         draft.id = o.id;
+        draft.subtopics = []; // subtopics belong to the previous system
         renderGrid();
+        renderSubtopics();
       });
       grid.appendChild(tile);
     }
@@ -137,6 +150,44 @@ export function renderFocus(ctx: Ctx): HTMLElement {
     boardNote.textContent = BOARD_LEVELS.find((b) => b.id === draft.boards)?.blurb ?? '';
   }
 
+  /**
+   * Subtopic multi-select. Course mode only — in a systems course the
+   * focus is a single system, so its subtopic tree is a clean narrow.
+   * Each chip shows the count of concepts with content at the current
+   * board scope; empty subtopics are visible but not selectable.
+   */
+  function renderSubtopics() {
+    if (draft.mode !== 'course') {
+      subtopicSection.style.display = 'none';
+      return;
+    }
+    subtopicSection.style.display = '';
+    const subs = systemNode(draft.id as System)?.subtopics ?? [];
+    const counts = conceptCountBySubtopic(draft.boards);
+
+    subtopicChips.innerHTML = '';
+    for (const s of subs) {
+      const n = counts.get(s.id) ?? 0;
+      const pressed = draft.subtopics.includes(s.id);
+      const chip = el(
+        `<button type="button" class="subchip" aria-pressed="${pressed}" ${n === 0 ? 'disabled' : ''}>${esc(s.name)}<span class="ct">${n}</span></button>`,
+      );
+      if (n > 0) {
+        chip.addEventListener('click', () => {
+          draft.subtopics = pressed
+            ? draft.subtopics.filter((x) => x !== s.id)
+            : [...draft.subtopics, s.id];
+          renderSubtopics();
+        });
+      }
+      subtopicChips.appendChild(chip);
+    }
+
+    const active = draft.subtopics.length ? draft.subtopics : subs.map((s) => s.id);
+    const total = active.reduce((sum, id) => sum + (counts.get(id) ?? 0), 0);
+    matchCount.textContent = ` · ${total} concept${total === 1 ? '' : 's'} match`;
+  }
+
   function renderNote() {
     modeNote.innerHTML =
       '<span class="lab">How the modes differ</span>' +
@@ -152,8 +203,9 @@ export function renderFocus(ctx: Ctx): HTMLElement {
     if (mode === draft.mode) return;
     draft.mode = mode;
     draft.id = options()[0].id;
+    draft.subtopics = [];
     draft.timerSeconds = defaultSettings(mode).timerSeconds;
-    renderModeSeg(); renderGrid(); renderTimer(); renderNote();
+    renderModeSeg(); renderGrid(); renderTimer(); renderNote(); renderSubtopics();
   });
   mix.addEventListener('input', () => {
     draft.mixPercent = Number(mix.value);
@@ -175,18 +227,28 @@ export function renderFocus(ctx: Ctx): HTMLElement {
     const b = (e.target as HTMLElement).closest('button');
     if (!b) return;
     draft.boards = (b as HTMLElement).dataset.board as BoardLevel | 'all';
-    renderBoard();
+    // a subtopic that had content at the old board scope may now be
+    // empty (or vice versa); drop selections that no longer qualify
+    const counts = conceptCountBySubtopic(draft.boards);
+    draft.subtopics = draft.subtopics.filter((id) => (counts.get(id) ?? 0) > 0);
+    renderBoard(); renderSubtopics();
   });
 
   root.querySelector('#saveFocus')!.addEventListener('click', () => {
     ctx.setState({
       ...ctx.state,
-      focus: { mode: draft.mode, id: draft.id, mixPercent: draft.mixPercent, boards: draft.boards },
+      focus: {
+        mode: draft.mode,
+        id: draft.id,
+        mixPercent: draft.mixPercent,
+        boards: draft.boards,
+        subtopics: draft.mode === 'course' ? draft.subtopics : [],
+      },
       settings: { timerSeconds: draft.timerSeconds, dailyGoal: draft.dailyGoal },
     });
     ctx.go('today');
   });
 
-  renderModeSeg(); renderGrid(); renderMix(); renderTimer(); renderGoal(); renderBoard(); renderNote();
+  renderModeSeg(); renderGrid(); renderMix(); renderTimer(); renderGoal(); renderBoard(); renderNote(); renderSubtopics();
   return root;
 }

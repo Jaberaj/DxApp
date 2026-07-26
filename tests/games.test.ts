@@ -38,4 +38,17 @@ describe('games registry', () => {
     // @ts-expect-error deliberately passing an invalid id
     expect(gameById('nope').id).toBe(GAMES[0].id);
   });
+
+  it('Rapid Treatments is a distinct game drawing only tx_* item types', () => {
+    const tx = gameById('rapid_tx');
+    expect(tx.id).not.toBe('rapid_ddx');
+    expect(tx.itemTypes.every((t) => t.startsWith('tx_'))).toBe(true);
+    const set = buildSet(ITEMS, CONCEPTS, defaultState(), NOW, {
+      types: tx.itemTypes,
+      board: 'all',
+      setSize: tx.setSize,
+    });
+    expect(set.length).toBeGreaterThan(0);
+    for (const item of set) expect(item.type.startsWith('tx_'), item.itemId).toBe(true);
+  });
 });

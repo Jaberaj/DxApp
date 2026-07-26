@@ -14,27 +14,13 @@
      guidance.
    ══════════════════════════════════════════════════════════════ */
 
-import type { BoardLevel, Concept, Item, PresentationType, System, Vital } from '../types';
+import type { BoardLevel, Concept, Item, System } from '../types';
 import { UNREVIEWED } from '../types';
 import { subtopicById } from './taxonomy';
+import { v, type RawConcept, type RawItem } from './authoring';
+import { EXPANSION } from './expansion';
 
-const v = (label: string, value: string, hot = false): Vital => ({ label, value, hot });
-
-/**
- * Authoring shape for a vignette: board tags and the enrichment
- * fields are optional. `normalizeItem` fills them so the exported
- * bank always satisfies the full Item contract.
- */
-type RawItem = Omit<Item, 'tags' | 'presentation' | 'exposures' | 'pCorrect'> & {
-  tags: Omit<Item['tags'], 'boards'> & { boards?: BoardLevel[] };
-  presentation?: PresentationType;
-  exposures?: number;
-  pCorrect?: number | null;
-};
-
-/** Authoring shape for a concept: enrichment fields filled at export. */
-type RawConcept = Pick<Concept, 'conceptId' | 'name' | 'system' | 'topic'> &
-  Partial<Pick<Concept, 'alsoTaggedSystems' | 'illnessScript' | 'reviewedBy' | 'reviewedOn'>>;
+export { v };
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
   if (raw.tags.boards) return raw.tags.boards;
@@ -43,7 +29,10 @@ function deriveBoards(raw: RawItem): BoardLevel[] {
       return ['step1', 'step2'];
     case 'ecg':
       return ['step2', 'step3'];
-    case 'management':
+    case 'tx_next_step':
+    case 'tx_contraindication':
+    case 'tx_sequencing':
+    case 'tx_threshold':
       return ['step2', 'step3'];
     default:
       // reasoning items keyed off the clinical level tag
@@ -70,7 +59,7 @@ function normalizeItem(raw: RawItem): Item {
  * from this map, or pointing at a subtopic in a different system,
  * fails the content-integrity suite.
  */
-const CONCEPT_SUBTOPIC: Record<string, string> = {
+const BASE_SUBTOPIC: Record<string, string> = {
   'pe-recognition': 'pulm.vte',
   'pe-workup': 'pulm.vte',
   'tension-ptx': 'pulm.pleura',
@@ -122,7 +111,7 @@ const CONCEPT_SUBTOPIC: Record<string, string> = {
 };
 
 /** Concepts that legitimately span more than their primary system. */
-const CONCEPT_ALSO_SYSTEMS: Record<string, System[]> = {
+const BASE_ALSO: Record<string, System[]> = {
   'pe-recognition': ['cardiovascular'],
   'pe-workup': ['cardiovascular'],
   'pleuritic-ddx': ['cardiovascular'],
@@ -134,7 +123,7 @@ const CONCEPT_ALSO_SYSTEMS: Record<string, System[]> = {
   'anaphylaxis-firstline': ['pulmonary', 'cardiovascular'],
 };
 
-const RAW_CONCEPTS: RawConcept[] = [
+const BASE_CONCEPTS: RawConcept[] = [
   { conceptId: 'pe-recognition', name: 'Recognising pulmonary embolism', system: 'pulmonary', topic: 'Pulmonary embolism' },
   { conceptId: 'pe-workup', name: 'PE work-up by pretest probability', system: 'pulmonary', topic: 'Pulmonary embolism' },
   { conceptId: 'tension-ptx', name: 'Tension pneumothorax', system: 'pulmonary', topic: 'Pneumothorax & pleura' },
@@ -191,7 +180,7 @@ const RAW_CONCEPTS: RawConcept[] = [
   { conceptId: 'assoc-nf1', name: 'Café-au-lait/Lisch → NF1', system: 'neuro', topic: 'Buzzwords — neurology' },
 ];
 
-const RAW: RawItem[] = [
+const BASE_ITEMS: RawItem[] = [
   /* ── pe-recognition ──────────────────────────────────────── */
   {
     itemId: 'pe-recognition-1', version: 1, type: 'one_liner', conceptId: 'pe-recognition',
@@ -625,7 +614,7 @@ const RAW: RawItem[] = [
 
   /* ── hyperk-first ────────────────────────────────────────── */
   {
-    itemId: 'hyperk-1', version: 1, type: 'next_step', conceptId: 'hyperk-first',
+    itemId: 'hyperk-1', version: 1, type: 'tx_sequencing', conceptId: 'hyperk-first',
     stem: 'Dialysis patient who missed two sessions. Potassium 7.2. ECG shows peaked T waves and a widening QRS. What do you give first?',
     vitals: [v('HR', '58', true), v('BP', '142/84'), v('K⁺', '7.2', true)],
     findings: [],
@@ -665,7 +654,7 @@ const RAW: RawItem[] = [
     source: [{ ref: 'ACC/AHA Chest Pain Guideline', year: 2021 }],
   },
   {
-    itemId: 'stemi-reperfusion-1', version: 1, type: 'management', conceptId: 'stemi-reperfusion',
+    itemId: 'stemi-reperfusion-1', version: 1, type: 'tx_next_step', conceptId: 'stemi-reperfusion',
     stem: 'Confirmed anterior STEMI, symptom onset 90 minutes ago, at a hospital with a 24/7 cath lab. Door-to-balloon can be achieved in 55 minutes. What is the reperfusion strategy?',
     vitals: [],
     findings: [],
@@ -682,7 +671,7 @@ const RAW: RawItem[] = [
     source: [{ ref: 'ACC/AHA/SCAI Coronary Revascularization Guideline', year: 2021 }],
   },
   {
-    itemId: 'adhf-firstline-1', version: 1, type: 'management', conceptId: 'adhf-firstline',
+    itemId: 'adhf-firstline-1', version: 1, type: 'tx_next_step', conceptId: 'adhf-firstline',
     stem: 'Acute pulmonary edema: a patient sitting bolt upright, gasping, SpO₂ 86%, BP 176/98, crackles to the apices. Diagnosis is clear. What is the first-line drug?',
     vitals: [v('BP', '176/98', true), v('SpO₂', '86%', true), v('RR', '32', true)],
     findings: [],
@@ -699,7 +688,7 @@ const RAW: RawItem[] = [
     source: [{ ref: 'ACC/AHA/HFSA Heart Failure Guideline', year: 2022 }],
   },
   {
-    itemId: 'anaphylaxis-1', version: 1, type: 'management', conceptId: 'anaphylaxis-firstline',
+    itemId: 'anaphylaxis-1', version: 1, type: 'tx_next_step', conceptId: 'anaphylaxis-firstline',
     stem: 'Minutes after a cephalosporin dose: diffuse hives, lip swelling, wheeze and BP 82/50. What do you give first, and by what route?',
     vitals: [v('HR', '128', true), v('BP', '82/50', true), v('SpO₂', '90%', true)],
     findings: [],
@@ -716,7 +705,7 @@ const RAW: RawItem[] = [
     source: [{ ref: 'WAO Anaphylaxis Guidance', year: 2020 }],
   },
   {
-    itemId: 'afib-anticoag-1', version: 1, type: 'management', conceptId: 'afib-anticoag',
+    itemId: 'afib-anticoag-1', version: 1, type: 'tx_threshold', conceptId: 'afib-anticoag',
     stem: 'A 74-year-old woman with hypertension and diabetes is found to have non-valvular atrial fibrillation. She has never had a stroke. What most determines whether she needs long-term anticoagulation?',
     vitals: [],
     findings: [],
@@ -733,7 +722,7 @@ const RAW: RawItem[] = [
     source: [{ ref: 'ACC/AHA/ACCP/HRS Atrial Fibrillation Guideline', year: 2023 }],
   },
   {
-    itemId: 'dka-firststep-1', version: 1, type: 'management', conceptId: 'dka-firststep',
+    itemId: 'dka-firststep-1', version: 1, type: 'tx_sequencing', conceptId: 'dka-firststep',
     stem: 'New diabetic ketoacidosis: glucose 540, pH 7.10, potassium 5.2, and clinically dry with tachycardia. What is the first step?',
     vitals: [v('HR', '124', true), v('BP', '104/64'), v('K⁺', '5.2')],
     findings: [],
@@ -1165,6 +1154,12 @@ const RAW: RawItem[] = [
   },
 ];
 
+/** Merged raw content: base bank + expansion modules. */
+const RAW: RawItem[] = [...BASE_ITEMS, ...EXPANSION.items];
+const RAW_CONCEPTS: RawConcept[] = [...BASE_CONCEPTS, ...EXPANSION.concepts];
+const CONCEPT_SUBTOPIC: Record<string, string> = { ...BASE_SUBTOPIC, ...EXPANSION.subtopics };
+const CONCEPT_ALSO_SYSTEMS: Record<string, System[]> = { ...BASE_ALSO, ...(EXPANSION.alsoSystems ?? {}) };
+
 /** The full bank of vignettes, normalised. */
 export const ITEMS: Item[] = RAW.map(normalizeItem);
 
@@ -1217,7 +1212,17 @@ export interface FocusOption {
 export const COURSES: FocusOption[] = [
   { id: 'cardiovascular', name: 'Cardiovascular', topicLine: 'chest pain, dyspnea, syncope', systems: ['cardiovascular'] },
   { id: 'pulmonary', name: 'Pulmonary', topicLine: 'cough, hypoxemia, wheeze', systems: ['pulmonary'] },
-  { id: 'renal', name: 'Renal', topicLine: 'AKI, electrolytes, acid–base', systems: ['renal'] },
+  { id: 'renal', name: 'Renal & GU', topicLine: 'AKI, electrolytes, acid–base', systems: ['renal'] },
+  { id: 'neuro', name: 'Neuroscience', topicLine: 'stroke, seizure, weakness', systems: ['neuro'] },
+  { id: 'gi', name: 'GI & Liver', topicLine: 'abdominal pain, jaundice, bleeding', systems: ['gi'] },
+  { id: 'endocrine', name: 'Endocrine', topicLine: 'thyroid, adrenal, diabetes', systems: ['endocrine'] },
+  { id: 'msk_rheum', name: 'MSK & Rheum', topicLine: 'joint pain, vasculitis, back pain', systems: ['msk_rheum'] },
+  { id: 'heme_onc', name: 'Heme & Onc', topicLine: 'anemia, leukemia, buzzwords', systems: ['heme_onc'] },
+  { id: 'infectious', name: 'Infectious', topicLine: 'sepsis, HIV, pneumonia', systems: ['infectious'] },
+  { id: 'multisystem', name: 'Multisystem', topicLine: 'shock, toxicology, allergy', systems: ['multisystem'] },
+  { id: 'psychiatry', name: 'Psychiatry', topicLine: 'mood, withdrawal, med emergencies', systems: ['psychiatry'] },
+  { id: 'dermatology', name: 'Dermatology', topicLine: 'drug eruptions, skin cancer', systems: ['dermatology'] },
+  { id: 'reproductive', name: 'Reproductive', topicLine: 'pregnancy, pelvic pain', systems: ['reproductive'] },
 ];
 
 export const ROTATIONS: FocusOption[] = [
@@ -1246,4 +1251,21 @@ export function itemsForConcept(conceptId: string): Item[] {
 /** Does an item serve the given board scope? 'all' matches everything. */
 export function servesBoard(item: Item, board: BoardLevel | 'all'): boolean {
   return board === 'all' || item.tags.boards.includes(board);
+}
+
+/**
+ * Concepts that have at least one vignette serving the board scope,
+ * counted per taxonomy subtopic. Drives the subtopic filter's live
+ * per-subtopic counts and the "N concepts match" readout.
+ */
+export function conceptCountBySubtopic(board: BoardLevel | 'all'): Map<string, number> {
+  const withContent = new Set(
+    ITEMS.filter((i) => servesBoard(i, board)).map((i) => i.conceptId),
+  );
+  const counts = new Map<string, number>();
+  for (const c of CONCEPTS) {
+    if (!withContent.has(c.conceptId)) continue;
+    counts.set(c.subtopic, (counts.get(c.subtopic) ?? 0) + 1);
+  }
+  return counts;
 }

@@ -9,6 +9,7 @@
 
 import type { Ctx } from './app';
 import type { GameId, Item, SessionItemResult } from '../types';
+import { TREATMENT_TYPES } from '../types';
 import { CONCEPTS, ITEMS, conceptById } from '../content/bank';
 import { gameById, type GameDef } from '../content/games';
 import { buildSet } from '../engine/session';
@@ -30,7 +31,7 @@ const CLOSE_ICON =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>';
 
 /** Noun for the counter, per game. */
-const UNIT: Record<GameId, string> = { rapid_ddx: 'Item', ecg: 'Rhythm', buzzword: 'Buzzword' };
+const UNIT: Record<GameId, string> = { rapid_ddx: 'Item', rapid_tx: 'Item', ecg: 'Rhythm', buzzword: 'Buzzword' };
 
 export function renderDrill(ctx: Ctx): HTMLElement {
   const payload = ctx.payload as { game?: GameId } | undefined;
@@ -294,6 +295,11 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     }
     if (item.teachingPoint) {
       card.appendChild(el(`<p>${esc(item.teachingPoint)}</p>`));
+    }
+    // Treatment items carry a higher bar: surface the guideline citation.
+    if (TREATMENT_TYPES.includes(item.type) && item.source[0]) {
+      const s = item.source[0];
+      card.appendChild(el(`<p class="src">Guideline · ${esc(s.ref)} (${s.year})</p>`));
     }
     return card;
   }

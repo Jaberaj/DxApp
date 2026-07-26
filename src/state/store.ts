@@ -23,7 +23,7 @@ export function defaultSettings(mode: 'course' | 'rotation'): Settings {
 export function defaultState(): AppState {
   return {
     version: STATE_VERSION,
-    focus: { mode: 'rotation', id: 'im', mixPercent: 75, boards: 'all' },
+    focus: { mode: 'rotation', id: 'im', mixPercent: 75, boards: 'all', subtopics: [] },
     settings: defaultSettings('rotation'),
     schedules: {},
     mastery: {},

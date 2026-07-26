@@ -21,14 +21,8 @@ export interface GameDef {
   setSize: number;
 }
 
-const DDX_TYPES: ItemType[] = [
-  'one_liner',
-  'discriminator',
-  'next_step',
-  'cant_miss',
-  'build_ddx',
-  'management',
-];
+const DDX_TYPES: ItemType[] = ['one_liner', 'discriminator', 'next_step', 'cant_miss', 'build_ddx'];
+const TX_TYPES: ItemType[] = ['tx_next_step', 'tx_contraindication', 'tx_sequencing', 'tx_threshold'];
 
 export const GAMES: GameDef[] = [
   {
@@ -39,6 +33,15 @@ export const GAMES: GameDef[] = [
     accent: 'pulse',
     icon: '<path d="M2 12h4l2.5-7 4 14L15 12h7"/>',
     setSize: 12,
+  },
+  {
+    id: 'rapid_tx',
+    name: 'Rapid Treatments',
+    tagline: 'First-line, contraindications, sequencing — what to do and what not to give',
+    itemTypes: TX_TYPES,
+    accent: 'clay',
+    icon: '<path d="M10.5 20.5a5 5 0 0 1-7-7l6-6a5 5 0 0 1 7 7l-6 6ZM8 8l8 8"/>',
+    setSize: 10,
   },
   {
     id: 'ecg',

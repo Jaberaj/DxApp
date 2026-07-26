@@ -51,12 +51,11 @@ try {
   const focusSub = await page.textContent('.focusbar .txt span');
   if (!/Step 2/.test(focusSub)) throw new Error(`board scope not shown: ${focusSub}`);
 
-  // Play each of the three mini-games in turn
-  const cards = page.locator('.task');
-  const gameCount = await cards.count();
-  if (gameCount < 3) throw new Error(`expected 3 games, saw ${gameCount}`);
+  // Play each of the four mini-games in turn (incl. Rapid Treatments)
+  const gameCount = await page.locator('.task').count();
+  if (gameCount < 4) throw new Error(`expected 4 games, saw ${gameCount}`);
 
-  for (let g = 0; g < 3; g++) {
+  for (let g = 0; g < 4; g++) {
     await page.waitForSelector('.task');
     await page.locator('.task').nth(g).click();
     const headline = await playSet();
@@ -65,6 +64,27 @@ try {
     await page.waitForSelector('.focusbar');
   }
 
+  // Subtopic filter: course mode → a system → pick a subtopic chip
+  await page.click('.focusbar');
+  await page.waitForSelector('#modeSeg');
+  await page.click('#modeSeg button[data-mode="course"]');
+  await page.waitForSelector('#subtopicChips .subchip');
+  // pick the first subtopic that has content (not disabled)
+  const enabled = page.locator('.subchip:not([disabled])');
+  if ((await enabled.count()) === 0) throw new Error('no selectable subtopics');
+  await enabled.first().click();
+  const match = await page.textContent('#matchCount');
+  if (!/\d+ concept/.test(match)) throw new Error(`no match count: ${match}`);
+  await page.click('#saveFocus');
+  await page.waitForSelector('.focusbar');
+  const scope = await page.textContent('.focusbar .txt span');
+  if (!/subtopic/.test(scope)) throw new Error(`subtopic scope not shown: ${scope}`);
+  // a drill under the narrowed focus still runs
+  await page.locator('.task').first().click();
+  await playSet();
+  await page.click('.btn.quiet');
+  await page.waitForSelector('.focusbar');
+
   // Streak registered and persists across reload
   await page.waitForSelector('.streak-chip');
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -72,9 +92,8 @@ try {
   const streak = (await page.textContent('.streak-chip')).trim();
   if (Number(streak) < 1) throw new Error(`streak did not persist: ${streak}`);
 
-  // ECG strips actually rendered somewhere in the ECG game
   if (errors.length) throw new Error(`page errors: ${errors.join('; ')}`);
-  console.log(`smoke ok — three games played, streak ${streak} persisted`);
+  console.log(`smoke ok — four games + subtopic filter, streak ${streak} persisted`);
 } finally {
   await browser.close();
   await server.close();

@@ -57,11 +57,16 @@ export function renderToday(ctx: Ctx): HTMLElement {
   const scroll = root.querySelector('.scroll')!;
 
   // ── focus bar ──
+  const subN = state.focus.subtopics.length;
+  const scopeLine =
+    (state.focus.mode === 'rotation' ? 'Rotation' : 'Systems course') +
+    ` · ${boardLabel(state.focus.boards)}` +
+    (subN > 0 ? ` · ${subN} subtopic${subN === 1 ? '' : 's'}` : '');
   const focusBar = el(`<button class="focusbar" type="button">
     <span class="swatch" style="background:${state.focus.mode === 'rotation' ? 'var(--depth)' : 'var(--pulse)'}"></span>
     <span class="txt">
       <b>${esc(opt.name)}</b>
-      <span>${state.focus.mode === 'rotation' ? 'Rotation' : 'Systems course'} · ${esc(boardLabel(state.focus.boards))} · ${state.focus.mixPercent}% on block</span>
+      <span>${esc(scopeLine)}</span>
     </span>
     ${CHEVRON}
   </button>`);

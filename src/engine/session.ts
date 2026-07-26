@@ -72,6 +72,14 @@ export function buildSet(
     candidates = collectCandidates(allItems, allConcepts, state, now, { ...filter, board: 'all' });
   }
 
+  // Subtopic selection is a HARD narrow (unlike the board relax): the
+  // set is drawn only from the chosen subtopics. A short set is honest;
+  // padding with off-topic items is the "lying filter" we refuse.
+  const picked = state.focus.subtopics;
+  if (picked.length > 0) {
+    candidates = candidates.filter((c) => picked.includes(c.concept.subtopic));
+  }
+
   const blockPool = candidates.filter((c) => c.items.some((i) => inBlock(i, state.focus)));
   // review = anything already seen that is NOT part of the current block
   const reviewPool = candidates.filter(

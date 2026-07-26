@@ -49,7 +49,11 @@ const optionSchema = z.object({
 const itemSchema = z.object({
   itemId: z.string().min(1),
   version: z.number().int().positive(),
-  type: z.enum(['one_liner', 'discriminator', 'next_step', 'cant_miss', 'build_ddx', 'management', 'ecg', 'association']),
+  type: z.enum([
+    'one_liner', 'discriminator', 'next_step', 'cant_miss', 'build_ddx',
+    'tx_next_step', 'tx_contraindication', 'tx_sequencing', 'tx_threshold',
+    'ecg', 'association',
+  ]),
   conceptId: z.string().min(1),
   stem: z.string(),
   vitals: z.array(z.object({ label: z.string(), value: z.string(), hot: z.boolean().optional() })),

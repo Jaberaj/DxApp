@@ -33,8 +33,12 @@ mastery/streak spine — only the content slice and the prompt presentation
 differ (`src/content/games.ts`).
 
 - **Rapid Differentials** — the workhorse. One-liner → diagnosis, the flagship
-  *discriminator* type, next best step, can't-miss-first, build-the-differential
-  (multi-select), and first-line *management* items.
+  *discriminator* type, next best step, can't-miss-first, and
+  build-the-differential (multi-select).
+- **Rapid Treatments** — a distinct game with a higher bar: first-line
+  (`tx_next_step`), **contraindications** (`tx_contraindication` — "which must
+  you NOT give?"), sequencing, and treatment thresholds. Every treatment item
+  cites a named guideline with a year, shown in the feedback.
 - **ECG Rhythms** — read the strip. A parametric renderer
   (`src/ui/ecgRenderer.ts`) draws rate, rhythm, P-wave behaviour, PR/QRS,
   ST shift, T-wave shape, delta waves, and the arrest morphologies (torsades,
@@ -54,6 +58,11 @@ differ (`src/content/games.ts`).
   with the levels it serves, and a Focus control narrows both differentials and
   treatments to the chosen level. An over-restrictive scope relaxes gracefully
   rather than handing back an empty set (`servesBoard`, `buildSet`).
+- **Subtopic multi-select filtering** — in systems-course mode, a system's
+  taxonomy subtopics appear as chips with live per-subtopic concept counts and a
+  running "N concepts match" readout. Selecting subtopics is a **hard narrow**:
+  the set is drawn only from them (a short, honest set if few exist), never
+  padded with off-topic items — the deliberate opposite of a "filter that lies."
 - **A single diagnosis, tested many ways** — a concept's variants span several
   item types (e.g. STEMI as a one-liner, a can't-miss, an ECG read, and a
   reperfusion decision), and variant rotation surfaces them across sessions.
@@ -103,9 +112,13 @@ IDs are permanent join keys for mastery, scheduling, and coverage.
   content is marked `UNREVIEWED`; the build *warns* on it and it must not reach a
   learner as validated until a physician signs off.
 
-Current bank: **56 vignettes / 48 concepts / 25 of 108 subtopics**, cardiology-
-and pulmonary-heavy, all `UNREVIEWED`. Difficulty seeds are author guesses, to
-be overwritten by observed p(correct) once telemetry runs.
+Current bank: **134 vignettes / 125 concepts / 61 of 108 subtopics**, spanning
+cardiology, pulmonary, renal & GU, neurology, GI & hepatobiliary, endocrine,
+MSK & rheumatology, heme/onc, ID, toxicology, psychiatry, dermatology and
+OB/GYN — all `UNREVIEWED`, every vignette sourced. See
+[MIGRATION_REPORT.md](MIGRATION_REPORT.md) for the live coverage map and the
+47 remaining empty subtopics. Difficulty seeds are author guesses, to be
+overwritten by observed p(correct) once telemetry runs.
 
 ## Architecture
 

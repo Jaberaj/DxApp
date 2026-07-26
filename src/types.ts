@@ -5,16 +5,30 @@
    prose. See docs/product-guide.md §V1.2.
    ══════════════════════════════════════════════════════════════ */
 
-/** Item formats. `discriminator` is the flagship type. */
+/** Item formats. `discriminator` is the flagship diagnostic type. */
 export type ItemType =
-  | 'one_liner'      // vignette + vitals → diagnosis
-  | 'discriminator'  // two diagnoses named up front: which finding separates them?
-  | 'next_step'      // diagnosis given/obvious → what do you order?
-  | 'cant_miss'      // which must you exclude before anything else?
-  | 'build_ddx'      // multi-select: pick the ones that belong
-  | 'management'     // first-line / threshold / contraindication (treatments)
-  | 'ecg'            // read the rhythm strip
-  | 'association';   // buzzword / gene / finding → diagnosis
+  // ── Rapid Differentials ──
+  | 'one_liner'          // vignette + vitals → diagnosis
+  | 'discriminator'      // two diagnoses named up front: which finding separates them?
+  | 'next_step'          // diagnosis given/obvious → what do you order?
+  | 'cant_miss'          // which must you exclude before anything else?
+  | 'build_ddx'          // multi-select: pick the ones that belong
+  // ── Rapid Treatments (higher safety bar) ──
+  | 'tx_next_step'       // diagnosis given → what do you do now, and why not the others
+  | 'tx_contraindication'// which of these must you NOT give? (highest-value tx type)
+  | 'tx_sequencing'      // what comes first
+  | 'tx_threshold'       // when do you actually treat
+  // ── other games ──
+  | 'ecg'                // read the rhythm strip
+  | 'association';       // buzzword / gene / finding → diagnosis
+
+/** Treatment item types share a higher review bar and cite a guideline. */
+export const TREATMENT_TYPES: ItemType[] = [
+  'tx_next_step',
+  'tx_contraindication',
+  'tx_sequencing',
+  'tx_threshold',
+];
 
 /**
  * Board levels the content maps to. An item can serve several:
@@ -25,7 +39,7 @@ export type ItemType =
 export type BoardLevel = 'step1' | 'step2' | 'step3';
 
 /** The mini-games. Each draws a distinct slice of the item bank. */
-export type GameId = 'rapid_ddx' | 'ecg' | 'buzzword';
+export type GameId = 'rapid_ddx' | 'rapid_tx' | 'ecg' | 'buzzword';
 
 export type System =
   | 'cardiovascular'
@@ -248,6 +262,13 @@ export interface FocusState {
   mixPercent: number;
   /** board-level scope; 'all' leaves the bank unfiltered */
   boards: BoardLevel | 'all';
+  /**
+   * Selected taxonomy subtopic ids. Empty = the whole focus scope.
+   * When non-empty this is a HARD narrow: the set is drawn only from
+   * these subtopics (a short, honest set if fewer than a full set
+   * exists), never padded with off-topic items.
+   */
+  subtopics: string[];
 }
 
 export interface Settings {
