@@ -112,13 +112,34 @@ IDs are permanent join keys for mastery, scheduling, and coverage.
   content is marked `UNREVIEWED`; the build *warns* on it and it must not reach a
   learner as validated until a physician signs off.
 
-Current bank: **134 vignettes / 125 concepts / 61 of 108 subtopics**, spanning
+Current bank: **181 vignettes / 147 concepts / 64 of 108 subtopics**, spanning
 cardiology, pulmonary, renal & GU, neurology, GI & hepatobiliary, endocrine,
 MSK & rheumatology, heme/onc, ID, toxicology, psychiatry, dermatology and
 OB/GYN — all `UNREVIEWED`, every vignette sourced. See
 [MIGRATION_REPORT.md](MIGRATION_REPORT.md) for the live coverage map and the
-47 remaining empty subtopics. Difficulty seeds are author guesses, to be
+44 remaining empty subtopics. Difficulty seeds are author guesses, to be
 overwritten by observed p(correct) once telemetry runs.
+
+### Presentation variance & repeat suppression
+
+A concept resurfaces for review by design (that's spaced repetition), so to
+keep it from feeling repetitive it must show a **different patient** each time.
+Two mechanisms:
+
+- **Multiple vignettes per concept** — classic / atypical / elderly / severe /
+  mimic. High-traffic concepts (PE, STEMI, appendicitis, stroke, …) carry
+  several presentations; the ECG (18 items) and Buzzword (36 items) pools are
+  now well above a set size so a set is a genuine sample.
+- **Cross-session suppression** (`src/engine/session.ts`) — a suppression
+  window derived from session history feeds two behaviours: the selector ranks
+  fresh concepts above just-seen ones, and `chooseVariant` prefers a
+  presentation you haven't seen recently. A multi-variant concept is
+  **guaranteed** not to repeat the same vignette in consecutive sessions
+  (asserted by a 25-session simulation test). Selection is a weighted sample
+  from the top-ranked window, not a strict argmax, so sets don't feel identical.
+
+Adding more presentations per concept is the ongoing content lever: 26 of 147
+concepts currently have ≥2 vignettes.
 
 ## Architecture
 

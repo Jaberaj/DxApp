@@ -95,9 +95,45 @@ export function buildSet(
   // top up from the other pool when one runs short
   reviewN = Math.min(target - blockN, reviewPool.length);
 
-  const chosen = [...pick(blockPool, blockN, rng), ...pick(reviewPool, reviewN, rng)];
-  const set = chosen.map((c) => chooseVariant(c, state, rng));
+  // SUPPRESS: how recently each vignette was seen, from session history.
+  // Drives both concept ranking (fresh concepts first) and variant
+  // choice (a resurfacing concept shows a patient you haven't just seen).
+  const recency = recentItemRanks(state);
+  const chosen = [...pick(blockPool, blockN, rng, recency), ...pick(reviewPool, reviewN, rng, recency)];
+  const set = chosen.map((c) => chooseVariant(c, state, rng, recency));
   return shuffle(set, rng);
+}
+
+/** Sessions looked back over for suppression. */
+export const SUPPRESS_WINDOW = 6;
+
+/**
+ * itemId → how recently it was seen: 1 = last session, 2 = the one
+ * before, up to SUPPRESS_WINDOW. Absent = not seen in the window.
+ */
+function recentItemRanks(state: AppState): Map<string, number> {
+  const recent = state.sessions.slice(-SUPPRESS_WINDOW);
+  const ranks = new Map<string, number>();
+  for (let k = recent.length - 1; k >= 0; k--) {
+    const rank = recent.length - k; // newest → 1
+    for (const r of recent[k].results) {
+      if (!ranks.has(r.itemId)) ranks.set(r.itemId, rank);
+    }
+  }
+  return ranks;
+}
+
+/** Freshness penalty for a concept: 0 if it has an unseen variant, else
+ *  larger the more recently its variants were last seen. */
+function stalenessPenalty(c: Candidate, recency: Map<string, number>): number {
+  let minRank = Infinity;
+  for (const i of c.items) {
+    if (!recency.has(i.itemId)) return 0; // an unseen variant → fully fresh
+    minRank = Math.min(minRank, recency.get(i.itemId)!);
+  }
+  if (minRank === Infinity) return 0;
+  // seen last session (rank 1) → biggest penalty; older → smaller
+  return (SUPPRESS_WINDOW + 1 - minRank) * 12;
 }
 
 function collectCandidates(
@@ -133,8 +169,14 @@ function collectCandidates(
   return candidates;
 }
 
-/** Rank a pool (due → weakness → jitter) and take the top n. */
-function pick(pool: Candidate[], n: number, rng: () => number): Candidate[] {
+/**
+ * Rank a pool (due → weakness → freshness) and pick n. Selection is a
+ * WEIGHTED sample from the best-ranked window, not a strict argmax, so
+ * consecutive sets don't feel identical (Efraimidis–Spirakis weighted
+ * sampling without replacement, deterministic under a fixed rng).
+ */
+function pick(pool: Candidate[], n: number, rng: () => number, recency: Map<string, number>): Candidate[] {
+  if (n <= 0 || pool.length === 0) return [];
   const ranked = pool
     .map((c) => ({
       c,
@@ -142,31 +184,54 @@ function pick(pool: Candidate[], n: number, rng: () => number): Candidate[] {
         (c.due ? 0 : 1000) + // due concepts always outrank not-due
         Math.min(c.dueIn, 365) + // sooner-due first among the not-due
         (100 - c.weakness) * 0.5 + // weaker topics first
-        rng() * 8, // jitter so sets aren't identical
+        stalenessPenalty(c, recency), // recently-seen concepts sink
     }))
     .sort((a, b) => a.key - b.key);
-  return ranked.slice(0, n).map((r) => r.c);
+
+  // Sample from a window of the strongest candidates so the same few
+  // don't appear every time; the window is at least n, up to ~half.
+  const windowSize = Math.min(ranked.length, Math.max(n + 4, Math.ceil(ranked.length * 0.5)));
+  const window = ranked.slice(0, windowSize);
+  // weight earlier (better-ranked) entries more heavily
+  const weighted = window.map((r, idx) => ({
+    c: r.c,
+    key: Math.pow(rng(), 1 / (windowSize - idx)), // higher weight → larger key
+  }));
+  weighted.sort((a, b) => b.key - a.key);
+  return weighted.slice(0, n).map((w) => w.c);
 }
 
 /**
- * Choose which variant of a concept to serve: never a retired item
- * (answered correctly twice) unless every variant is retired, in
- * which case the least-drilled one comes back. `cand.items` is
- * already filtered to the game + board scope.
+ * Choose which variant of a concept to serve. Never a retired item
+ * (answered correctly twice) unless all are retired. Among the rest,
+ * prefer a presentation the learner hasn't seen recently — a due
+ * concept resurfaces as a *different patient*, which is the point.
+ * `cand.items` is already filtered to the game + board scope.
  */
-function chooseVariant(cand: Candidate, state: AppState, rng: () => number): Item {
+function chooseVariant(
+  cand: Candidate,
+  state: AppState,
+  rng: () => number,
+  recency: Map<string, number>,
+): Item {
   const sched = state.schedules[cand.concept.conceptId];
   const retired = new Set(sched?.retiredItems ?? []);
-  const live = cand.items.filter((i) => !retired.has(i.itemId));
-  const pool = live.length > 0 ? live : cand.items;
-  if (live.length === 0 && sched) {
+  let pool = cand.items.filter((i) => !retired.has(i.itemId));
+
+  if (pool.length === 0) {
     // all variants retired — resurface the least-reinforced sibling
-    pool.sort(
-      (a, b) => (sched.correctStreak[a.itemId] ?? 0) - (sched.correctStreak[b.itemId] ?? 0),
+    pool = [...cand.items].sort(
+      (a, b) => (sched?.correctStreak[a.itemId] ?? 0) - (sched?.correctStreak[b.itemId] ?? 0),
     );
     return pool[0];
   }
-  return pool[Math.floor(rng() * pool.length)];
+
+  const unseen = pool.filter((i) => !recency.has(i.itemId));
+  if (unseen.length > 0) {
+    return unseen[Math.floor(rng() * unseen.length)]; // a fresh presentation
+  }
+  // every live variant seen recently — serve the one seen longest ago
+  return [...pool].sort((a, b) => recency.get(b.itemId)! - recency.get(a.itemId)!)[0];
 }
 
 function shuffle<T>(arr: T[], rng: () => number): T[] {

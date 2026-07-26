@@ -17,10 +17,14 @@
 import type { BoardLevel, Concept, Item, System } from '../types';
 import { UNREVIEWED } from '../types';
 import { subtopicById } from './taxonomy';
-import { v, type RawConcept, type RawItem } from './authoring';
+import { v, type ContentModule, type RawConcept, type RawItem } from './authoring';
 import { EXPANSION } from './expansion';
+import { EXPANSION2 } from './expansion2';
 
 export { v };
+
+/** Content modules merged on top of the base bank, in order. */
+const MODULES: ContentModule[] = [EXPANSION, EXPANSION2];
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
   if (raw.tags.boards) return raw.tags.boards;
@@ -1155,10 +1159,18 @@ const BASE_ITEMS: RawItem[] = [
 ];
 
 /** Merged raw content: base bank + expansion modules. */
-const RAW: RawItem[] = [...BASE_ITEMS, ...EXPANSION.items];
-const RAW_CONCEPTS: RawConcept[] = [...BASE_CONCEPTS, ...EXPANSION.concepts];
-const CONCEPT_SUBTOPIC: Record<string, string> = { ...BASE_SUBTOPIC, ...EXPANSION.subtopics };
-const CONCEPT_ALSO_SYSTEMS: Record<string, System[]> = { ...BASE_ALSO, ...(EXPANSION.alsoSystems ?? {}) };
+const RAW: RawItem[] = [...BASE_ITEMS, ...MODULES.flatMap((m) => m.items)];
+const RAW_CONCEPTS: RawConcept[] = [...BASE_CONCEPTS, ...MODULES.flatMap((m) => m.concepts)];
+const CONCEPT_SUBTOPIC: Record<string, string> = Object.assign(
+  {},
+  BASE_SUBTOPIC,
+  ...MODULES.map((m) => m.subtopics),
+);
+const CONCEPT_ALSO_SYSTEMS: Record<string, System[]> = Object.assign(
+  {},
+  BASE_ALSO,
+  ...MODULES.map((m) => m.alsoSystems ?? {}),
+);
 
 /** The full bank of vignettes, normalised. */
 export const ITEMS: Item[] = RAW.map(normalizeItem);

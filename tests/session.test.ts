@@ -4,8 +4,8 @@ import { CONCEPTS, ITEMS, servesBoard } from '../src/content/bank';
 import { gameById } from '../src/content/games';
 import { buildSet, inBlock, type SetFilter } from '../src/engine/session';
 import { newSchedule, review } from '../src/engine/scheduler';
-import { defaultState } from '../src/state/store';
-import type { AppState, BoardLevel } from '../src/types';
+import { commitSession, defaultState } from '../src/state/store';
+import type { AppState, BoardLevel, Item, SessionItemResult } from '../src/types';
 
 const NOW = new Date('2026-07-25T12:00:00Z');
 const rng = () => 0.42;
@@ -98,6 +98,93 @@ describe('session builder — subtopic narrowing', () => {
     const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), rng);
     expect(set.length).toBeGreaterThan(0);
     for (const item of set) expect(item.tags.system, item.itemId).toBe('neuro');
+  });
+});
+
+describe('session builder — repeat suppression', () => {
+  // small seeded PRNG so simulations are deterministic
+  function mulberry(seed: number): () => number {
+    let s = seed >>> 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const asResults = (set: Item[]): SessionItemResult[] =>
+    set.map((it) => ({
+      itemId: it.itemId,
+      conceptId: it.conceptId,
+      correct: false, // keep concepts un-retired so we isolate freshness
+      elapsedMs: 1,
+      chosen: [],
+      timedOut: false,
+      points: 0,
+    }));
+
+  it('prefers a fresh presentation for a concept seen last session', () => {
+    let state: AppState = {
+      ...defaultState(),
+      focus: { mode: 'course', id: 'pulmonary', mixPercent: 100, boards: 'all', subtopics: [] },
+    };
+    // mark PE variant #1 as just-seen
+    state = {
+      ...state,
+      sessions: [
+        {
+          startedAt: NOW.toISOString(),
+          finishedAt: NOW.toISOString(),
+          focus: state.focus,
+          game: 'rapid_ddx',
+          results: [asResults([ITEMS.find((i) => i.itemId === 'pe-recognition-1')!])[0]],
+          totalPoints: 0,
+        },
+      ],
+    };
+    for (let t = 0; t < 15; t++) {
+      const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), mulberry(t + 1));
+      const pe = set.find((i) => i.conceptId === 'pe-recognition');
+      if (pe) expect(pe.itemId, `trial ${t}`).not.toBe('pe-recognition-1');
+    }
+  });
+
+  it('never serves the same vignette in consecutive sessions for a multi-variant concept', () => {
+    let state: AppState = {
+      ...defaultState(),
+      focus: { mode: 'course', id: 'pulmonary', mixPercent: 100, boards: 'all', subtopics: [] },
+    };
+    // eligible variant count per concept for the DDx game
+    const ddxTypes = new Set(gameById('rapid_ddx').itemTypes);
+    const variantCount = new Map<string, number>();
+    for (const i of ITEMS) {
+      if (ddxTypes.has(i.type)) variantCount.set(i.conceptId, (variantCount.get(i.conceptId) ?? 0) + 1);
+    }
+
+    const perConcept = new Map<string, { session: number; itemId: string }[]>();
+    const N = 25;
+    for (let s = 0; s < N; s++) {
+      const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), mulberry(s + 100));
+      for (const it of set) {
+        const arr = perConcept.get(it.conceptId) ?? [];
+        arr.push({ session: s, itemId: it.itemId });
+        perConcept.set(it.conceptId, arr);
+      }
+      state = commitSession(state, asResults(set), 'rapid_ddx', NOW, NOW).state;
+    }
+
+    for (const [conceptId, appearances] of perConcept) {
+      if ((variantCount.get(conceptId) ?? 1) < 2) continue; // single-variant concepts can't help it
+      for (let k = 1; k < appearances.length; k++) {
+        if (appearances[k].session === appearances[k - 1].session + 1) {
+          expect(
+            appearances[k].itemId,
+            `${conceptId} repeated in consecutive sessions ${appearances[k - 1].session}→${appearances[k].session}`,
+          ).not.toBe(appearances[k - 1].itemId);
+        }
+      }
+    }
   });
 });
 

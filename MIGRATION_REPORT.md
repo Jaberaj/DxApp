@@ -5,30 +5,30 @@ and reports coverage against the taxonomy.*
 
 ## Census
 
-- Vignettes (items) in: **134**
-- Concepts out: **125**
+- Vignettes (items) in: **181**
+- Concepts out: **147**
 - Vignettes missing `legacyItemId` (orphan risk): **0**
 - Concepts not placed in the taxonomy: **0**
-- Concepts UNREVIEWED (pending physician sign-off): **125/125**
+- Concepts UNREVIEWED (pending physician sign-off): **147/147**
 
 ## Board-level distribution (vignettes; may serve several)
 
-- Step 1: 93 · Step 2 CK: 134 · Step 3: 109
+- Step 1: 123 · Step 2 CK: 175 · Step 3: 140
 
 ## Taxonomy coverage
 
 - Subtopics defined: **108** across 14 systems
-- Subtopics with ≥1 concept: **61**
-- Empty subtopics (visible gaps to fill): **47**
+- Subtopics with ≥1 concept: **64**
+- Empty subtopics (visible gaps to fill): **44**
 
 ### Empty subtopics by system
 
 - **Cardiovascular**: cv.htn-lipids
 - **Pulmonary**: pulm.parenchyma, pulm.critical, pulm.neoplasm, pulm.vascular
-- **GI & Hepatobiliary**: gi.infectious, gi.neoplasm, gi.nutrition
+- **GI & Hepatobiliary**: gi.infectious, gi.neoplasm
 - **Endocrine**: endo.repro-endo, endo.lipid-metab
-- **Heme & Onc**: heme.anemia, heme.hemostasis, onc.solid, heme.transfusion
-- **Infectious Disease**: id.sepsis, id.gi-id, id.uti-id, id.cns-id, id.skin-soft, id.zoonotic
+- **Heme & Onc**: heme.hemostasis, onc.solid, heme.transfusion
+- **Infectious Disease**: id.sepsis, id.gi-id, id.uti-id, id.cns-id, id.skin-soft
 - **Dermatology**: derm.inflammatory, derm.systemic, derm.hypersensitivity
 - **Psychiatry**: psych.anxiety, psych.psychotic, psych.neurocognitive, psych.somatic-personality, psych.child-psych, psych.eating
 - **Reproductive**: repro.gyn-onc, repro.breast, repro.infertility, repro.sti, repro.contraception
