@@ -1,21 +1,33 @@
 /* ══════════════════════════════════════════════════════════════
    Session builder.
-   A set is 12 items, 5–7 minutes. Selection order inside each pool:
+   A set is drawn for one mini-game: only items of that game's types
+   are eligible, further narrowed by the board-level scope. Within
+   that pool, selection order is:
      1. concepts due for review (FSRS)
      2. weak topics first (mastery drives the queue)
      3. random tie-break
    The mix slider splits the set between the current block and
    review of everything already seen. One item per concept per set;
    retired variants are skipped so the concept resurfaces through a
-   sibling.
+   sibling — and because a concept's variants span several item
+   types, a single diagnosis gets tested in several ways over time.
    ══════════════════════════════════════════════════════════════ */
 
-import type { AppState, Concept, FocusState, Item } from '../types';
-import { COURSES, ROTATIONS, type FocusOption } from '../content/bank';
+import type { AppState, BoardLevel, Concept, FocusState, Item, ItemType } from '../types';
+import { COURSES, ROTATIONS, servesBoard, type FocusOption } from '../content/bank';
 import { decayedScore } from './mastery';
 import { daysUntilDue, isDue } from './scheduler';
 
 export const SET_SIZE = 12;
+
+export interface SetFilter {
+  /** item types this game draws from */
+  types: ItemType[];
+  /** board scope; 'all' leaves the bank unfiltered */
+  board: BoardLevel | 'all';
+  /** items per set */
+  setSize: number;
+}
 
 export function focusOption(focus: FocusState): FocusOption {
   const pool = focus.mode === 'rotation' ? ROTATIONS : COURSES;
@@ -33,6 +45,7 @@ export function inBlock(item: Item, focus: FocusState): boolean {
 
 interface Candidate {
   concept: Concept;
+  /** items of this concept eligible for the current game + board scope */
   items: Item[];
   due: boolean;
   dueIn: number;
@@ -40,15 +53,55 @@ interface Candidate {
   seen: boolean;
 }
 
+function eligible(item: Item, filter: SetFilter): boolean {
+  return filter.types.includes(item.type) && servesBoard(item, filter.board);
+}
+
 export function buildSet(
   allItems: Item[],
   allConcepts: Concept[],
   state: AppState,
   now: Date,
+  filter: SetFilter,
   rng: () => number = Math.random,
 ): Item[] {
+  let candidates = collectCandidates(allItems, allConcepts, state, now, filter);
+  // If the board scope emptied the pool but the game has content at
+  // other levels, relax the board filter rather than show nothing.
+  if (candidates.length === 0 && filter.board !== 'all') {
+    candidates = collectCandidates(allItems, allConcepts, state, now, { ...filter, board: 'all' });
+  }
+
+  const blockPool = candidates.filter((c) => c.items.some((i) => inBlock(i, state.focus)));
+  // review = anything already seen that is NOT part of the current block
+  const reviewPool = candidates.filter(
+    (c) => c.seen && !c.items.some((i) => inBlock(i, state.focus)),
+  );
+
+  const target = Math.min(filter.setSize, candidates.length);
+  let reviewN = Math.min(
+    Math.round((target * (100 - state.focus.mixPercent)) / 100),
+    reviewPool.length,
+  );
+  let blockN = Math.min(target - reviewN, blockPool.length);
+  // top up from the other pool when one runs short
+  reviewN = Math.min(target - blockN, reviewPool.length);
+
+  const chosen = [...pick(blockPool, blockN, rng), ...pick(reviewPool, reviewN, rng)];
+  const set = chosen.map((c) => chooseVariant(c, state, rng));
+  return shuffle(set, rng);
+}
+
+function collectCandidates(
+  allItems: Item[],
+  allConcepts: Concept[],
+  state: AppState,
+  now: Date,
+  filter: SetFilter,
+): Candidate[] {
   const byConcept = new Map<string, Item[]>();
   for (const item of allItems) {
+    if (!eligible(item, filter)) continue;
     const list = byConcept.get(item.conceptId) ?? [];
     list.push(item);
     byConcept.set(item.conceptId, list);
@@ -69,29 +122,7 @@ export function buildSet(
       seen: !!sched,
     });
   }
-
-  const blockPool = candidates.filter((c) => c.items.some((i) => inBlock(i, state.focus)));
-  // review = anything already seen that is NOT part of the current block
-  const reviewPool = candidates.filter(
-    (c) => c.seen && !c.items.some((i) => inBlock(i, state.focus)),
-  );
-
-  const target = Math.min(SET_SIZE, candidates.length);
-  let reviewN = Math.min(
-    Math.round((target * (100 - state.focus.mixPercent)) / 100),
-    reviewPool.length,
-  );
-  let blockN = Math.min(target - reviewN, blockPool.length);
-  // top up from the other pool when one runs short
-  reviewN = Math.min(target - blockN, reviewPool.length);
-
-  const chosen = [
-    ...pick(blockPool, blockN, rng),
-    ...pick(reviewPool, reviewN, rng),
-  ];
-
-  const set = chosen.map((c) => chooseVariant(c, state, rng));
-  return shuffle(set, rng);
+  return candidates;
 }
 
 /** Rank a pool (due → weakness → jitter) and take the top n. */
@@ -112,7 +143,8 @@ function pick(pool: Candidate[], n: number, rng: () => number): Candidate[] {
 /**
  * Choose which variant of a concept to serve: never a retired item
  * (answered correctly twice) unless every variant is retired, in
- * which case the least-drilled one comes back.
+ * which case the least-drilled one comes back. `cand.items` is
+ * already filtered to the game + board scope.
  */
 function chooseVariant(cand: Candidate, state: AppState, rng: () => number): Item {
   const sched = state.schedules[cand.concept.conceptId];

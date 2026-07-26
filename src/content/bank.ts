@@ -14,9 +14,40 @@
      guidance.
    ══════════════════════════════════════════════════════════════ */
 
-import type { Concept, Item, Vital } from '../types';
+import type { BoardLevel, Concept, Item, Vital } from '../types';
 
 const v = (label: string, value: string, hot = false): Vital => ({ label, value, hot });
+
+/**
+ * Authoring shape: board tags are optional. Everything else matches
+ * Item exactly. `normalizeItem` fills boards from the item type and
+ * level when the author leaves them off, so the exported bank always
+ * satisfies the full Item contract.
+ */
+type RawItem = Omit<Item, 'tags'> & {
+  tags: Omit<Item['tags'], 'boards'> & { boards?: BoardLevel[] };
+};
+
+function deriveBoards(raw: RawItem): BoardLevel[] {
+  if (raw.tags.boards) return raw.tags.boards;
+  switch (raw.type) {
+    case 'association':
+      return ['step1', 'step2'];
+    case 'ecg':
+      return ['step2', 'step3'];
+    case 'management':
+      return ['step2', 'step3'];
+    default:
+      // reasoning items keyed off the clinical level tag
+      if (raw.tags.level === 'preclinical') return ['step1', 'step2'];
+      if (raw.tags.level === 'clerkship') return ['step2', 'step3'];
+      return ['step1', 'step2', 'step3'];
+  }
+}
+
+function normalizeItem(raw: RawItem): Item {
+  return { ...raw, tags: { ...raw.tags, boards: deriveBoards(raw) } };
+}
 
 export const CONCEPTS: Concept[] = [
   { conceptId: 'pe-recognition', name: 'Recognising pulmonary embolism', system: 'pulmonary', topic: 'Pulmonary embolism' },
@@ -37,9 +68,45 @@ export const CONCEPTS: Concept[] = [
   { conceptId: 'pleuritic-ddx', name: 'Building the pleuritic differential', system: 'pulmonary', topic: 'Acute chest pain' },
   { conceptId: 'prerenal-vs-atn', name: 'Prerenal AKI vs ATN', system: 'renal', topic: 'Acute kidney injury' },
   { conceptId: 'hyperk-first', name: 'Hyperkalemia — what comes first', system: 'renal', topic: 'Electrolytes' },
+
+  /* ── treatment / management (Step 2–3) ─────────────────────── */
+  { conceptId: 'stemi-reperfusion', name: 'STEMI reperfusion strategy', system: 'cardiovascular', topic: 'Acute coronary syndromes' },
+  { conceptId: 'adhf-firstline', name: 'First-line for acute pulmonary edema', system: 'cardiovascular', topic: 'Heart failure' },
+  { conceptId: 'anaphylaxis-firstline', name: 'First-line for anaphylaxis', system: 'infectious', topic: 'Anaphylaxis & shock' },
+  { conceptId: 'afib-anticoag', name: 'Anticoagulation threshold in AF', system: 'cardiovascular', topic: 'Tachyarrhythmias' },
+  { conceptId: 'dka-firststep', name: 'First step in DKA', system: 'endocrine', topic: 'Diabetic emergencies' },
+
+  /* ── ECG mini-game ─────────────────────────────────────────── */
+  { conceptId: 'ecg-stemi', name: 'ECG: anterior STEMI', system: 'cardiovascular', topic: 'ECG — ischemia' },
+  { conceptId: 'ecg-vt', name: 'ECG: ventricular tachycardia', system: 'cardiovascular', topic: 'ECG — wide-complex' },
+  { conceptId: 'ecg-afib', name: 'ECG: atrial fibrillation', system: 'cardiovascular', topic: 'ECG — irregular rhythms' },
+  { conceptId: 'ecg-flutter', name: 'ECG: atrial flutter', system: 'cardiovascular', topic: 'ECG — irregular rhythms' },
+  { conceptId: 'ecg-chb', name: 'ECG: complete heart block', system: 'cardiovascular', topic: 'ECG — conduction block' },
+  { conceptId: 'ecg-first-degree', name: 'ECG: first-degree AV block', system: 'cardiovascular', topic: 'ECG — conduction block' },
+  { conceptId: 'ecg-hyperk', name: 'ECG: hyperkalemia', system: 'renal', topic: 'ECG — metabolic' },
+  { conceptId: 'ecg-wpw', name: 'ECG: pre-excitation (WPW)', system: 'cardiovascular', topic: 'ECG — wide-complex' },
+  { conceptId: 'ecg-torsades', name: 'ECG: torsades de pointes', system: 'cardiovascular', topic: 'ECG — arrest rhythms' },
+  { conceptId: 'ecg-vfib', name: 'ECG: ventricular fibrillation', system: 'cardiovascular', topic: 'ECG — arrest rhythms' },
+
+  /* ── Buzzword association mini-game (Step 1–2) ──────────────── */
+  { conceptId: 'assoc-jak2', name: 'JAK2 → polycythemia vera', system: 'heme_onc', topic: 'Buzzwords — heme/onc' },
+  { conceptId: 'assoc-auer', name: 'Auer rods → AML', system: 'heme_onc', topic: 'Buzzwords — heme/onc' },
+  { conceptId: 'assoc-philadelphia', name: 'Philadelphia chromosome → CML', system: 'heme_onc', topic: 'Buzzwords — heme/onc' },
+  { conceptId: 'assoc-smudge', name: 'Smudge cells → CLL', system: 'heme_onc', topic: 'Buzzwords — heme/onc' },
+  { conceptId: 'assoc-reed-sternberg', name: 'Reed–Sternberg → Hodgkin', system: 'heme_onc', topic: 'Buzzwords — heme/onc' },
+  { conceptId: 'assoc-ttp', name: 'Schistocytes pentad → TTP', system: 'heme_onc', topic: 'Buzzwords — heme/onc' },
+  { conceptId: 'assoc-anti-ccp', name: 'Anti-CCP → rheumatoid arthritis', system: 'msk_rheum', topic: 'Buzzwords — rheumatology' },
+  { conceptId: 'assoc-anti-dsdna', name: 'Anti-dsDNA/Smith → SLE', system: 'msk_rheum', topic: 'Buzzwords — rheumatology' },
+  { conceptId: 'assoc-anti-histone', name: 'Anti-histone → drug-induced lupus', system: 'msk_rheum', topic: 'Buzzwords — rheumatology' },
+  { conceptId: 'assoc-hla-b27', name: 'HLA-B27 bamboo spine → AS', system: 'msk_rheum', topic: 'Buzzwords — rheumatology' },
+  { conceptId: 'assoc-anti-gbm', name: 'Anti-GBM → Goodpasture', system: 'renal', topic: 'Buzzwords — renal' },
+  { conceptId: 'assoc-ama', name: 'Anti-mitochondrial → PBC', system: 'gi', topic: 'Buzzwords — GI/liver' },
+  { conceptId: 'assoc-rib-notching', name: 'Rib notching → coarctation', system: 'cardiovascular', topic: 'Buzzwords — cardiology' },
+  { conceptId: 'assoc-currant-jelly', name: 'Currant-jelly sputum → Klebsiella', system: 'infectious', topic: 'Buzzwords — infectious disease' },
+  { conceptId: 'assoc-nf1', name: 'Café-au-lait/Lisch → NF1', system: 'neuro', topic: 'Buzzwords — neurology' },
 ];
 
-export const ITEMS: Item[] = [
+const RAW: RawItem[] = [
   /* ── pe-recognition ──────────────────────────────────────── */
   {
     itemId: 'pe-recognition-1', version: 1, type: 'one_liner', conceptId: 'pe-recognition',
@@ -489,7 +556,532 @@ export const ITEMS: Item[] = [
     difficultySeed: 0.7,
     source: [{ ref: 'KDIGO Controversies: Potassium Management', year: 2020 }],
   },
+
+  /* ── single diagnoses, tested another way ─────────────────────
+     STEMI already has a recognition one-liner and an ECG-reading
+     item in the ECG game; here it is drilled as a can't-miss and as
+     a management decision, so the same diagnosis is met from every
+     angle across sessions. */
+  {
+    itemId: 'stemi-2', version: 1, type: 'cant_miss', conceptId: 'stemi-recognition',
+    stem: '58 F, diabetic, with nausea, breathlessness and profound fatigue but no chest pain. Which diagnosis must you actively exclude before calling this a viral illness?',
+    vitals: [v('HR', '58', true), v('BP', '104/70'), v('SpO₂', '95% RA')],
+    findings: ['Diaphoretic and grey. ECG not yet done.'],
+    options: [
+      { id: 'a', text: 'Acute myocardial infarction', correct: true },
+      { id: 'b', text: 'Gastroenteritis', whyNot: 'Gastroenteritis does not make a diabetic grey and diaphoretic with bradycardia — that is a heart, not a gut.' },
+      { id: 'c', text: 'Influenza', whyNot: 'Flu is a reasonable afterthought, but you cannot afford to miss a painless infarct while treating it.' },
+      { id: 'd', text: 'Anxiety', whyNot: 'Labelling diaphoresis and grey pallor as anxiety in a diabetic is how silent MIs are sent home.' },
+    ],
+    discriminator: 'Diabetics and women infarct without chest pain — nausea, dyspnea and diaphoresis are anginal equivalents, so the ECG comes before the diagnosis of a virus.',
+    teachingPoint: 'Get the 12-lead: an anginal equivalent is an infarct until the tracing says otherwise.',
+    tags: { system: 'cardiovascular', complaint: 'chest pain', rotation: ['im', 'em', 'fm'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ACC/AHA Chest Pain Guideline', year: 2021 }],
+  },
+  {
+    itemId: 'stemi-reperfusion-1', version: 1, type: 'management', conceptId: 'stemi-reperfusion',
+    stem: 'Confirmed anterior STEMI, symptom onset 90 minutes ago, at a hospital with a 24/7 cath lab. Door-to-balloon can be achieved in 55 minutes. What is the reperfusion strategy?',
+    vitals: [],
+    findings: [],
+    options: [
+      { id: 'a', text: 'Primary percutaneous coronary intervention', correct: true },
+      { id: 'b', text: 'Fibrinolysis (tPA)', whyNot: 'Lytics are the fallback when PCI is more than 120 minutes away — with a cath lab on-site, PCI is faster and better.' },
+      { id: 'c', text: 'Heparin and admit for observation', whyNot: 'A STEMI with an open cath lab is a plumbing emergency; observation forfeits salvageable myocardium.' },
+      { id: 'd', text: 'CT coronary angiography first', whyNot: 'The diagnosis is already made on the ECG — imaging only delays reperfusion.' },
+    ],
+    discriminator: 'When PCI-capable, primary PCI beats lytics if door-to-balloon is under 90 minutes — the deciding number is time-to-reperfusion, not the drug.',
+    teachingPoint: 'Give fibrinolytics only when PCI cannot be delivered within 120 minutes of first medical contact.',
+    tags: { system: 'cardiovascular', complaint: 'chest pain', rotation: ['im', 'em'], level: 'clerkship', boards: ['step2', 'step3'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ACC/AHA/SCAI Coronary Revascularization Guideline', year: 2021 }],
+  },
+  {
+    itemId: 'adhf-firstline-1', version: 1, type: 'management', conceptId: 'adhf-firstline',
+    stem: 'Acute pulmonary edema: a patient sitting bolt upright, gasping, SpO₂ 86%, BP 176/98, crackles to the apices. Diagnosis is clear. What is the first-line drug?',
+    vitals: [v('BP', '176/98', true), v('SpO₂', '86%', true), v('RR', '32', true)],
+    findings: [],
+    options: [
+      { id: 'a', text: 'IV loop diuretic (furosemide)', correct: true },
+      { id: 'b', text: 'IV beta-blocker', whyNot: 'Blunting contractility in acute pulmonary edema can tip a struggling ventricle into cardiogenic shock.' },
+      { id: 'c', text: 'IV fluids', whyNot: 'The problem is too much fluid in the wrong place — a bolus makes the edema worse.' },
+      { id: 'd', text: 'Oral spironolactone', whyNot: 'An aldosterone antagonist is chronic-care mortality benefit, not minutes-matter decongestion.' },
+    ],
+    discriminator: 'Hypertensive flash pulmonary edema is decongested with IV loop diuretics plus nitrates and oxygen — beta-blockade and fluids both move the patient the wrong way.',
+    teachingPoint: 'Add IV nitroglycerin for afterload when the blood pressure is high, as here.',
+    tags: { system: 'cardiovascular', complaint: 'dyspnea', rotation: ['im', 'em'], level: 'clerkship', boards: ['step2', 'step3'] },
+    difficultySeed: 0.7,
+    source: [{ ref: 'ACC/AHA/HFSA Heart Failure Guideline', year: 2022 }],
+  },
+  {
+    itemId: 'anaphylaxis-1', version: 1, type: 'management', conceptId: 'anaphylaxis-firstline',
+    stem: 'Minutes after a cephalosporin dose: diffuse hives, lip swelling, wheeze and BP 82/50. What do you give first, and by what route?',
+    vitals: [v('HR', '128', true), v('BP', '82/50', true), v('SpO₂', '90%', true)],
+    findings: [],
+    options: [
+      { id: 'a', text: 'Intramuscular epinephrine to the thigh', correct: true },
+      { id: 'b', text: 'IV diphenhydramine', whyNot: 'Antihistamines treat the hives but do nothing for the airway or the collapsing blood pressure — they are adjuncts, not the drug.' },
+      { id: 'c', text: 'IV hydrocortisone', whyNot: 'Steroids may blunt a late-phase reaction hours later; they save no one in the first minutes.' },
+      { id: 'd', text: 'Nebulised albuterol', whyNot: 'A bronchodilator eases wheeze but leaves the hypotension and laryngeal edema untreated.' },
+    ],
+    discriminator: 'Anaphylaxis is intramuscular epinephrine, first and without hesitation — antihistamines and steroids are adjuncts that treat neither the airway nor the shock.',
+    teachingPoint: 'IM into the anterolateral thigh; repeat every 5–15 minutes as needed before reaching for IV access.',
+    tags: { system: 'infectious', complaint: 'shock', rotation: ['em', 'im', 'peds'], level: 'both', boards: ['step1', 'step2', 'step3'] },
+    difficultySeed: 0.8,
+    source: [{ ref: 'WAO Anaphylaxis Guidance', year: 2020 }],
+  },
+  {
+    itemId: 'afib-anticoag-1', version: 1, type: 'management', conceptId: 'afib-anticoag',
+    stem: 'A 74-year-old woman with hypertension and diabetes is found to have non-valvular atrial fibrillation. She has never had a stroke. What most determines whether she needs long-term anticoagulation?',
+    vitals: [],
+    findings: [],
+    options: [
+      { id: 'a', text: 'Her CHA₂DS₂-VASc score', correct: true },
+      { id: 'b', text: 'Her heart rate at rest', whyNot: 'Rate guides symptom control, not stroke prophylaxis — a rate-controlled patient still strokes without anticoagulation.' },
+      { id: 'c', text: 'Whether she feels palpitations', whyNot: 'Symptom burden does not track embolic risk; silent AF embolises just as readily.' },
+      { id: 'd', text: 'Whether rhythm control is chosen', whyNot: 'Anticoagulation is decided by embolic risk regardless of a rate-versus-rhythm strategy.' },
+    ],
+    discriminator: 'Stroke prophylaxis in AF is driven by CHA₂DS₂-VASc, not by rate, symptoms, or the rhythm strategy — her age, hypertension, diabetes and sex already put her at ≥2.',
+    teachingPoint: 'Score ≥2 in men or ≥3 in women warrants a DOAC; her score of 4 clears that bar comfortably.',
+    tags: { system: 'cardiovascular', complaint: 'palpitations', rotation: ['im', 'fm'], level: 'clerkship', boards: ['step2', 'step3'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ACC/AHA/ACCP/HRS Atrial Fibrillation Guideline', year: 2023 }],
+  },
+  {
+    itemId: 'dka-firststep-1', version: 1, type: 'management', conceptId: 'dka-firststep',
+    stem: 'New diabetic ketoacidosis: glucose 540, pH 7.10, potassium 5.2, and clinically dry with tachycardia. What is the first step?',
+    vitals: [v('HR', '124', true), v('BP', '104/64'), v('K⁺', '5.2')],
+    findings: [],
+    options: [
+      { id: 'a', text: 'IV isotonic fluids', correct: true },
+      { id: 'b', text: 'IV insulin bolus', whyNot: 'Insulin before rehydration collapses the intravascular volume and drives potassium into cells too fast.' },
+      { id: 'c', text: 'IV sodium bicarbonate', whyNot: 'Bicarbonate is reserved for extreme acidemia; it does not treat the underlying dehydration and insulin deficit.' },
+      { id: 'd', text: 'IV potassium replacement now', whyNot: 'Her potassium is still normal-high — replace only once it falls below 5.3 and urine output is confirmed.' },
+    ],
+    discriminator: 'DKA is fluids first — restore volume before insulin, and never start insulin if potassium is under 3.3, because insulin will drive it lower.',
+    teachingPoint: 'Total-body potassium is depleted even when the serum value looks normal; watch it hourly once insulin runs.',
+    tags: { system: 'endocrine', complaint: 'metabolic emergency', rotation: ['im', 'em'], level: 'clerkship', boards: ['step2', 'step3'] },
+    difficultySeed: 0.65,
+    source: [{ ref: 'ADA Standards of Care — Hyperglycemic Crises', year: 2024 }],
+  },
+
+  /* ══════════ ECG MINI-GAME ══════════
+     Each item renders a rhythm strip as the prompt; the options are
+     rhythm names. The discriminator is the one reading pearl. */
+  {
+    itemId: 'ecg-stemi-1', version: 1, type: 'ecg', conceptId: 'ecg-stemi',
+    stem: '61 M, crushing chest pain for 40 minutes. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 84, regularity: 'regular', pWave: 'normal', qrsWide: false, stShift: 0.55, tWave: 'normal', lead: 'Lead V3' },
+    options: [
+      { id: 'a', text: 'ST-elevation myocardial infarction', correct: true },
+      { id: 'b', text: 'Normal sinus rhythm', whyNot: 'The J points are lifted well off the baseline — that ST elevation is exactly what "normal" rules out.' },
+      { id: 'c', text: 'Pericarditis', whyNot: 'Pericarditis elevates ST diffusely with PR depression; this elevation is regional and convex.' },
+      { id: 'd', text: 'Atrial fibrillation', whyNot: 'The rhythm is regular with clear P waves — AF is irregularly irregular with none.' },
+    ],
+    discriminator: 'ST-segment elevation of a millimetre or more, coving up off the baseline in a coronary territory, is an acute infarct until reperfusion proves otherwise.',
+    teachingPoint: 'The reciprocal ST depression in the opposite leads is what separates STEMI from the diffuse elevation of pericarditis.',
+    tags: { system: 'cardiovascular', complaint: 'chest pain', rotation: ['im', 'em'], level: 'both', boards: ['step2', 'step3'] },
+    difficultySeed: 0.75,
+    source: [{ ref: 'ACC/AHA Chest Pain Guideline', year: 2021 }],
+  },
+  {
+    itemId: 'ecg-vt-1', version: 1, type: 'ecg', conceptId: 'ecg-vt',
+    stem: '70 M with prior MI, palpitations and lightheadedness. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 180, regularity: 'regular', pWave: 'absent', qrsWide: true, tWave: 'inverted', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Ventricular tachycardia', correct: true },
+      { id: 'b', text: 'Sinus tachycardia', whyNot: 'Sinus tachycardia has narrow complexes with a P before every QRS; this is broad and P-less.' },
+      { id: 'c', text: 'Atrial fibrillation', whyNot: 'AF is irregular; this rhythm is regular and monomorphic.' },
+      { id: 'd', text: 'First-degree AV block', whyNot: 'First-degree block is a long PR on otherwise narrow, normal-rate beats — nothing like a wide fast run.' },
+    ],
+    discriminator: 'A fast, regular, wide-complex rhythm with no P waves — in someone with a prior infarct — is ventricular tachycardia until proven otherwise.',
+    teachingPoint: 'Structural heart disease turns "wide and fast" into VT by default; do not talk yourself into SVT with aberrancy.',
+    tags: { system: 'cardiovascular', complaint: 'palpitations', rotation: ['im', 'em'], level: 'both', boards: ['step2', 'step3'] },
+    difficultySeed: 0.7,
+    source: [{ ref: 'AHA/ACC/HRS Ventricular Arrhythmias Guideline', year: 2017 }],
+  },
+  {
+    itemId: 'ecg-afib-1', version: 1, type: 'ecg', conceptId: 'ecg-afib',
+    stem: 'Irregular palpitations in a 68-year-old. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 130, regularity: 'irregularly_irregular', pWave: 'fibrillatory', qrsWide: false, tWave: 'normal', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Atrial fibrillation', correct: true },
+      { id: 'b', text: 'Atrial flutter', whyNot: 'Flutter marches in a regular sawtooth; this baseline is chaotic and the R–R intervals never settle.' },
+      { id: 'c', text: 'Sinus arrhythmia', whyNot: 'Sinus arrhythmia keeps a P before every QRS and varies only gently with breathing.' },
+      { id: 'd', text: 'Multifocal atrial tachycardia', whyNot: 'MAT has visible P waves of three or more shapes; AF has no organised P waves at all.' },
+    ],
+    discriminator: 'An irregularly irregular rhythm with no discernible P waves and a wavering baseline is atrial fibrillation — the disorganised atrium never produces a clean P.',
+    tags: { system: 'cardiovascular', complaint: 'palpitations', rotation: ['im', 'em', 'fm'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.7,
+    source: [{ ref: 'ACC/AHA/ACCP/HRS Atrial Fibrillation Guideline', year: 2023 }],
+  },
+  {
+    itemId: 'ecg-flutter-1', version: 1, type: 'ecg', conceptId: 'ecg-flutter',
+    stem: 'Regular narrow tachycardia around 150. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 150, regularity: 'regular', pWave: 'sawtooth', qrsWide: false, tWave: 'normal', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Atrial flutter', correct: true },
+      { id: 'b', text: 'Atrial fibrillation', whyNot: 'AF is irregular with a chaotic baseline; flutter is regular with organised sawtooth waves.' },
+      { id: 'c', text: 'Sinus tachycardia', whyNot: 'Sinus tachycardia has one upright P per QRS, not a continuous picket-fence of atrial waves.' },
+      { id: 'd', text: 'AVNRT', whyNot: 'AVNRT hides the P waves in the QRS; flutter shows them plainly as sawtooth between complexes.' },
+    ],
+    discriminator: 'A regular narrow tachycardia at almost exactly 150 with sawtooth flutter waves is atrial flutter with 2:1 block — the atrial rate near 300 halves to a suspiciously round ventricular rate.',
+    teachingPoint: 'Any regular narrow tachycardia sitting right at 150 should prompt a hunt for flutter waves.',
+    tags: { system: 'cardiovascular', complaint: 'palpitations', rotation: ['im', 'em'], level: 'clerkship', boards: ['step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ACC/AHA/HRS Supraventricular Tachycardia Guideline', year: 2015 }],
+  },
+  {
+    itemId: 'ecg-chb-1', version: 1, type: 'ecg', conceptId: 'ecg-chb',
+    stem: '80 F, lightheaded and bradycardic. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 38, regularity: 'regular', pWave: 'dissociated', qrsWide: true, tWave: 'normal', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Complete (third-degree) heart block', correct: true },
+      { id: 'b', text: 'Sinus bradycardia', whyNot: 'Sinus bradycardia keeps a fixed P–QRS relationship; here the P waves march independently of the QRS.' },
+      { id: 'c', text: 'First-degree AV block', whyNot: 'First-degree block conducts every P with a long but constant PR; in complete block none conduct.' },
+      { id: 'd', text: 'Atrial fibrillation', whyNot: 'AF has no P waves; complete block has too many — marching at their own rate, unrelated to the QRS.' },
+    ],
+    discriminator: 'P waves and QRS complexes each regular but marching to their own drum — atrioventricular dissociation with a slow escape — is complete heart block.',
+    teachingPoint: 'The giveaway is P–P regular, R–R regular, but no fixed relationship between them.',
+    tags: { system: 'cardiovascular', complaint: 'syncope', rotation: ['im', 'em'], level: 'clerkship', boards: ['step2', 'step3'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ACC/AHA/HRS Bradycardia Guideline', year: 2018 }],
+  },
+  {
+    itemId: 'ecg-first-degree-1', version: 1, type: 'ecg', conceptId: 'ecg-first-degree',
+    stem: 'Asymptomatic finding on a routine ECG. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 66, regularity: 'regular', pWave: 'normal', prMs: 320, qrsWide: false, tWave: 'normal', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'First-degree AV block', correct: true },
+      { id: 'b', text: 'Normal sinus rhythm', whyNot: 'The PR interval is stretched well beyond 200 ms — a normal tracing keeps it under one large box.' },
+      { id: 'c', text: 'Complete heart block', whyNot: 'Here every P still conducts to a QRS; in complete block none do.' },
+      { id: 'd', text: 'Second-degree block, Mobitz I', whyNot: 'Mobitz I drops beats after progressive PR lengthening; this PR is long but constant and never drops.' },
+    ],
+    discriminator: 'A PR interval fixed above 200 ms with every P conducting is first-degree AV block — long but constant and never dropping a beat.',
+    tags: { system: 'cardiovascular', complaint: 'incidental', rotation: ['im', 'fm'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.65,
+    source: [{ ref: 'ACC/AHA/HRS Bradycardia Guideline', year: 2018 }],
+  },
+  {
+    itemId: 'ecg-hyperk-1', version: 1, type: 'ecg', conceptId: 'ecg-hyperk',
+    stem: 'Missed dialysis, now weak. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 62, regularity: 'regular', pWave: 'normal', qrsWide: true, tWave: 'peaked', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Hyperkalemia', correct: true },
+      { id: 'b', text: 'STEMI', whyNot: 'This is a peaked, tented T wave, not a lifted ST segment — the injury pattern of ischemia is different.' },
+      { id: 'c', text: 'Normal sinus rhythm', whyNot: 'The tall tented T waves and broadening QRS are exactly what a normal tracing lacks.' },
+      { id: 'd', text: 'Pericarditis', whyNot: 'Pericarditis gives diffuse ST elevation and PR depression, not tented T waves with a widening QRS.' },
+    ],
+    discriminator: 'Tall, tented, narrow-based T waves with a broadening QRS are the ECG face of hyperkalemia — the first sign before the sine-wave pattern of arrest.',
+    teachingPoint: 'A widening QRS in this setting is a call for IV calcium now, not a repeat potassium in an hour.',
+    tags: { system: 'renal', complaint: 'electrolyte emergency', rotation: ['im', 'em'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.65,
+    source: [{ ref: 'KDIGO Controversies: Potassium Management', year: 2020 }],
+  },
+  {
+    itemId: 'ecg-wpw-1', version: 1, type: 'ecg', conceptId: 'ecg-wpw',
+    stem: 'Young patient with intermittent palpitations, currently in sinus. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 72, regularity: 'regular', pWave: 'normal', prMs: 90, qrsWide: true, delta: true, tWave: 'normal', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Ventricular pre-excitation (WPW)', correct: true },
+      { id: 'b', text: 'Bundle branch block', whyNot: 'A bundle branch block widens the QRS but keeps a normal PR and has no delta wave slurring the upstroke.' },
+      { id: 'c', text: 'Ventricular tachycardia', whyNot: 'VT is fast and P-less; this is a normal-rate sinus rhythm with a pre-excited QRS.' },
+      { id: 'd', text: 'First-degree AV block', whyNot: 'First-degree block lengthens the PR; pre-excitation shortens it and adds a delta wave.' },
+    ],
+    discriminator: 'A short PR interval with a delta wave slurring the start of a widened QRS is pre-excitation — an accessory pathway lighting the ventricle up early.',
+    teachingPoint: 'Avoid AV-nodal blockers if this patient develops AF: they can accelerate conduction down the accessory pathway.',
+    tags: { system: 'cardiovascular', complaint: 'palpitations', rotation: ['im', 'em'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.55,
+    source: [{ ref: 'ACC/AHA/HRS Supraventricular Tachycardia Guideline', year: 2015 }],
+  },
+  {
+    itemId: 'ecg-torsades-1', version: 1, type: 'ecg', conceptId: 'ecg-torsades',
+    stem: 'Syncope on a QT-prolonging drug; a captured run. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 220, regularity: 'irregular', pWave: 'absent', qrsWide: true, special: 'torsades', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Torsades de pointes', correct: true },
+      { id: 'b', text: 'Monomorphic VT', whyNot: 'Monomorphic VT keeps a single QRS shape; torsades twists, its amplitude waxing and waning around the baseline.' },
+      { id: 'c', text: 'Atrial fibrillation', whyNot: 'AF is a narrow irregular rhythm; this is a broad polymorphic run spiralling around the isoelectric line.' },
+      { id: 'd', text: 'Artifact', whyNot: 'The pattern is a reproducible sinusoidal twist with syncope — too organised and too clinical to dismiss as noise.' },
+    ],
+    discriminator: 'A polymorphic wide-complex run whose axis twists around the baseline, in the setting of a long QT, is torsades de pointes — treat with magnesium.',
+    teachingPoint: 'Hunt for the culprit: QT-prolonging drugs, hypokalemia, hypomagnesemia.',
+    tags: { system: 'cardiovascular', complaint: 'syncope', rotation: ['im', 'em'], level: 'both', boards: ['step1', 'step2', 'step3'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'AHA/ACC/HRS Ventricular Arrhythmias Guideline', year: 2017 }],
+  },
+  {
+    itemId: 'ecg-vfib-1', version: 1, type: 'ecg', conceptId: 'ecg-vfib',
+    stem: 'Unresponsive, no pulse. Read the strip.',
+    vitals: [],
+    findings: [],
+    ecg: { rate: 300, regularity: 'irregularly_irregular', pWave: 'absent', qrsWide: true, special: 'vfib', lead: 'Lead II' },
+    options: [
+      { id: 'a', text: 'Ventricular fibrillation', correct: true },
+      { id: 'b', text: 'Asystole', whyNot: 'Asystole is a flat line; this is chaotic electrical activity — a shockable rhythm, not a silent one.' },
+      { id: 'c', text: 'Fine atrial fibrillation', whyNot: 'AF still marches organised QRS complexes; VF has no complexes at all, only chaos.' },
+      { id: 'd', text: 'Torsades de pointes', whyNot: 'Torsades has a discernible twisting sinusoidal pattern; VF is disorganised without any repeating axis.' },
+    ],
+    discriminator: 'Chaotic, disorganised deflections with no identifiable QRS in a pulseless patient is ventricular fibrillation — defibrillate immediately.',
+    teachingPoint: 'VF and pulseless VT are the shockable arrest rhythms; asystole and PEA are not.',
+    tags: { system: 'cardiovascular', complaint: 'arrest', rotation: ['im', 'em'], level: 'both', boards: ['step2', 'step3'] },
+    difficultySeed: 0.75,
+    source: [{ ref: 'AHA Guidelines for CPR and ECC', year: 2020 }],
+  },
+
+  /* ══════════ BUZZWORD ASSOCIATION MINI-GAME ══════════
+     The stem is the buzzword / gene / finding; the options are
+     diagnoses. Fast pattern recognition — Step 1 and Step 2 gold. */
+  {
+    itemId: 'assoc-jak2-1', version: 1, type: 'association', conceptId: 'assoc-jak2',
+    stem: 'JAK2 V617F mutation with an elevated red cell mass and aquagenic pruritus.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Polycythemia vera', correct: true },
+      { id: 'b', text: 'Chronic myeloid leukemia', whyNot: 'CML is driven by BCR-ABL, not JAK2, and raises the white count rather than the red cell mass.' },
+      { id: 'c', text: 'Secondary polycythemia', whyNot: 'Secondary polycythemia is EPO-driven from hypoxia and carries no JAK2 mutation.' },
+      { id: 'd', text: 'Essential thrombocythemia', whyNot: 'ET can share JAK2 but the picture is a platelet count in the millions, not a raised red cell mass with itching.' },
+    ],
+    discriminator: 'JAK2 V617F plus a raised red cell mass and itching after a hot shower is polycythemia vera — the mutation uncouples the marrow from EPO control.',
+    tags: { system: 'heme_onc', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'WHO Classification of Myeloid Neoplasms', year: 2022 }],
+  },
+  {
+    itemId: 'assoc-auer-1', version: 1, type: 'association', conceptId: 'assoc-auer',
+    stem: 'Auer rods in myeloid blasts on the peripheral smear.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Acute myeloid leukemia', correct: true },
+      { id: 'b', text: 'Acute lymphoblastic leukemia', whyNot: 'ALL blasts are lymphoid and lack Auer rods; think ALL in a child with TdT-positive blasts instead.' },
+      { id: 'c', text: 'Chronic myeloid leukemia', whyNot: 'CML shows a left-shifted myeloid series, not sheets of blasts studded with Auer rods.' },
+      { id: 'd', text: 'Reactive leukocytosis', whyNot: 'A reactive smear has mature neutrophils with toxic granulation, never Auer-rod-bearing blasts.' },
+    ],
+    discriminator: 'Auer rods are crystallised azurophilic granules found only in myeloid blasts — they are essentially pathognomonic for AML.',
+    teachingPoint: 'Auer rods plus DIC points to acute promyelocytic leukemia (APL), the t(15;17) subtype.',
+    tags: { system: 'heme_onc', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'WHO Classification of Myeloid Neoplasms', year: 2022 }],
+  },
+  {
+    itemId: 'assoc-philadelphia-1', version: 1, type: 'association', conceptId: 'assoc-philadelphia',
+    stem: 'The Philadelphia chromosome, t(9;22), producing a BCR-ABL fusion, with a markedly raised neutrophil count.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Chronic myeloid leukemia', correct: true },
+      { id: 'b', text: 'Acute myeloid leukemia', whyNot: 'AML is a blast crisis of immature cells; classic CML is a raised mature myeloid count driven by BCR-ABL.' },
+      { id: 'c', text: 'Polycythemia vera', whyNot: 'PV is a JAK2-driven red cell disorder, not a BCR-ABL neutrophilia.' },
+      { id: 'd', text: 'Leukemoid reaction', whyNot: 'A leukemoid reaction has a high leukocyte alkaline phosphatase; CML famously has a low LAP score.' },
+    ],
+    discriminator: 'BCR-ABL from t(9;22) is the engine of chronic myeloid leukemia — and the target of imatinib, the drug that made it a chronic disease.',
+    tags: { system: 'heme_onc', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'WHO Classification of Myeloid Neoplasms', year: 2022 }],
+  },
+  {
+    itemId: 'assoc-smudge-1', version: 1, type: 'association', conceptId: 'assoc-smudge',
+    stem: 'Smudge cells and a lymphocytosis of mature-looking B cells in an older adult.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Chronic lymphocytic leukemia', correct: true },
+      { id: 'b', text: 'Acute lymphoblastic leukemia', whyNot: 'ALL is a disease of children with fragile blasts, not mature smudge-prone lymphocytes in an elder.' },
+      { id: 'c', text: 'Infectious mononucleosis', whyNot: 'Mono shows reactive atypical lymphocytes in a young patient, not monoclonal smudge cells.' },
+      { id: 'd', text: 'Hairy cell leukemia', whyNot: 'Hairy cell shows cytoplasmic projections and marrow fibrosis, not smudge cells.' },
+    ],
+    discriminator: 'Smudge cells — fragile mature lymphocytes crushed on the smear — with a B-cell lymphocytosis in an older adult is chronic lymphocytic leukemia.',
+    tags: { system: 'heme_onc', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'WHO Classification of Lymphoid Neoplasms', year: 2022 }],
+  },
+  {
+    itemId: 'assoc-reed-sternberg-1', version: 1, type: 'association', conceptId: 'assoc-reed-sternberg',
+    stem: 'Binucleate "owl-eye" Reed–Sternberg cells in a lymph node from a young adult with painless cervical adenopathy.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Hodgkin lymphoma', correct: true },
+      { id: 'b', text: 'Non-Hodgkin lymphoma', whyNot: 'NHL lacks Reed–Sternberg cells and tends to spread non-contiguously; the owl-eye cell defines Hodgkin.' },
+      { id: 'c', text: 'Reactive lymphadenitis', whyNot: 'Reactive nodes show preserved architecture with follicular hyperplasia, not Reed–Sternberg cells.' },
+      { id: 'd', text: 'Sarcoidosis', whyNot: 'Sarcoid nodes contain non-caseating granulomas, not binucleate Reed–Sternberg cells.' },
+    ],
+    discriminator: 'The binucleate owl-eye Reed–Sternberg cell is the diagnostic cell of Hodgkin lymphoma — its contiguous nodal spread and bimodal age curve follow.',
+    tags: { system: 'heme_onc', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'WHO Classification of Lymphoid Neoplasms', year: 2022 }],
+  },
+  {
+    itemId: 'assoc-ttp-1', version: 1, type: 'association', conceptId: 'assoc-ttp',
+    stem: 'Schistocytes, thrombocytopenia, fever, fluctuating neuro signs and acute kidney injury — with a normal coagulation panel.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Thrombotic thrombocytopenic purpura', correct: true },
+      { id: 'b', text: 'Disseminated intravascular coagulation', whyNot: 'DIC consumes clotting factors, so PT and PTT are prolonged; in TTP the coagulation panel is normal.' },
+      { id: 'c', text: 'Immune thrombocytopenia', whyNot: 'ITP is isolated low platelets with no schistocytes, hemolysis, fever, or organ dysfunction.' },
+      { id: 'd', text: 'Hemolytic uremic syndrome', whyNot: 'HUS overlaps but is renal-predominant in children after Shiga toxin; the fever-plus-neuro pentad is TTP.' },
+    ],
+    discriminator: 'A microangiopathy with schistocytes and low platelets but a normal PT/PTT is TTP, not DIC — the clue is that clotting factors are spared.',
+    teachingPoint: 'TTP is an ADAMTS13 deficiency; do not give platelets — start plasma exchange.',
+    tags: { system: 'heme_onc', complaint: 'buzzword', rotation: ['im', 'em'], level: 'both', boards: ['step1', 'step2', 'step3'] },
+    difficultySeed: 0.55,
+    source: [{ ref: 'ISTH Guidelines for TTP', year: 2020 }],
+  },
+  {
+    itemId: 'assoc-anti-ccp-1', version: 1, type: 'association', conceptId: 'assoc-anti-ccp',
+    stem: 'Anti-cyclic citrullinated peptide (anti-CCP) antibodies with symmetric small-joint pain and morning stiffness.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Rheumatoid arthritis', correct: true },
+      { id: 'b', text: 'Systemic lupus erythematosus', whyNot: 'SLE is defined by anti-dsDNA and anti-Smith; anti-CCP is specific for rheumatoid disease.' },
+      { id: 'c', text: 'Osteoarthritis', whyNot: 'OA is a mechanical, seronegative, evening-worse arthritis of the large and DIP joints — no autoantibodies.' },
+      { id: 'd', text: 'Gout', whyNot: 'Gout is a crystal arthritis diagnosed on negatively birefringent urate, not an antibody.' },
+    ],
+    discriminator: 'Anti-CCP is the most specific antibody for rheumatoid arthritis and marks erosive disease — more specific than rheumatoid factor.',
+    tags: { system: 'msk_rheum', complaint: 'buzzword', rotation: ['im', 'fm'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ACR/EULAR Rheumatoid Arthritis Criteria', year: 2010 }],
+  },
+  {
+    itemId: 'assoc-anti-dsdna-1', version: 1, type: 'association', conceptId: 'assoc-anti-dsdna',
+    stem: 'Anti-double-stranded-DNA and anti-Smith antibodies in a young woman with a malar rash and glomerulonephritis.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Systemic lupus erythematosus', correct: true },
+      { id: 'b', text: 'Rheumatoid arthritis', whyNot: 'RA is marked by anti-CCP and rheumatoid factor, not anti-dsDNA or anti-Smith.' },
+      { id: 'c', text: 'Systemic sclerosis', whyNot: 'Scleroderma carries anti-Scl-70 or anti-centromere, and skin tightening rather than a malar rash.' },
+      { id: 'd', text: 'Sjögren syndrome', whyNot: 'Sjögren is anti-Ro/La with dry eyes and mouth, not anti-dsDNA nephritis.' },
+    ],
+    discriminator: 'Anti-dsDNA and anti-Smith are both highly specific for lupus, and anti-dsDNA titres track renal disease activity.',
+    tags: { system: 'msk_rheum', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ACR/EULAR SLE Classification Criteria', year: 2019 }],
+  },
+  {
+    itemId: 'assoc-anti-histone-1', version: 1, type: 'association', conceptId: 'assoc-anti-histone',
+    stem: 'Anti-histone antibodies with arthralgia and serositis that began after starting hydralazine or procainamide.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Drug-induced lupus', correct: true },
+      { id: 'b', text: 'Systemic lupus erythematosus', whyNot: 'Idiopathic SLE centres on anti-dsDNA/Smith and commonly involves the kidneys and CNS, which drug-induced lupus spares.' },
+      { id: 'c', text: 'Rheumatoid arthritis', whyNot: 'RA is an anti-CCP erosive arthritis without the drug trigger or anti-histone signature.' },
+      { id: 'd', text: 'Mixed connective tissue disease', whyNot: 'MCTD is defined by high-titre anti-U1-RNP, not anti-histone antibodies.' },
+    ],
+    discriminator: 'Anti-histone antibodies after a culprit drug — classically hydralazine, procainamide or isoniazid — is drug-induced lupus, which resolves when the drug stops.',
+    tags: { system: 'msk_rheum', complaint: 'buzzword', rotation: ['im', 'fm'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.55,
+    source: [{ ref: 'Review: Drug-induced lupus erythematosus', year: 2018 }],
+  },
+  {
+    itemId: 'assoc-hla-b27-1', version: 1, type: 'association', conceptId: 'assoc-hla-b27',
+    stem: 'A young man with inflammatory back pain, a "bamboo spine" on X-ray, and HLA-B27 positivity.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Ankylosing spondylitis', correct: true },
+      { id: 'b', text: 'Mechanical low back pain', whyNot: 'Mechanical pain eases with rest and worsens with activity; inflammatory spondyloarthritis does the reverse and fuses the spine.' },
+      { id: 'c', text: 'Rheumatoid arthritis', whyNot: 'RA spares the axial spine below C1–C2 and is anti-CCP positive, not HLA-B27 driven.' },
+      { id: 'd', text: 'Osteoporotic compression fracture', whyNot: 'A fracture is acute focal pain, not chronic inflammatory stiffness with syndesmophyte bridging.' },
+    ],
+    discriminator: 'Inflammatory back pain that improves with exercise, HLA-B27, and syndesmophytes bridging into a bamboo spine is ankylosing spondylitis.',
+    tags: { system: 'msk_rheum', complaint: 'buzzword', rotation: ['im', 'fm'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'ASAS Classification of Axial Spondyloarthritis', year: 2009 }],
+  },
+  {
+    itemId: 'assoc-anti-gbm-1', version: 1, type: 'association', conceptId: 'assoc-anti-gbm',
+    stem: 'Anti-glomerular-basement-membrane antibodies with hemoptysis and a rapidly progressive glomerulonephritis, and linear IgG on renal biopsy.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Goodpasture syndrome', correct: true },
+      { id: 'b', text: 'Granulomatosis with polyangiitis', whyNot: 'GPA is c-ANCA positive with upper-airway involvement, not anti-GBM with linear IgG.' },
+      { id: 'c', text: 'IgA nephropathy', whyNot: 'IgA nephropathy shows mesangial IgA after a mucosal infection, not linear anti-GBM staining.' },
+      { id: 'd', text: 'Post-streptococcal glomerulonephritis', whyNot: 'PSGN is a lumpy-bumpy immune-complex nephritis after strep, with low complement — not anti-GBM.' },
+    ],
+    discriminator: 'Anti-GBM antibodies and linear IgG along the basement membrane, striking lung and kidney together, is Goodpasture (anti-GBM) disease.',
+    tags: { system: 'renal', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.55,
+    source: [{ ref: 'KDIGO Glomerular Diseases Guideline', year: 2021 }],
+  },
+  {
+    itemId: 'assoc-ama-1', version: 1, type: 'association', conceptId: 'assoc-ama',
+    stem: 'Anti-mitochondrial antibodies in a middle-aged woman with fatigue, intense pruritus and a cholestatic liver panel.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Primary biliary cholangitis', correct: true },
+      { id: 'b', text: 'Autoimmune hepatitis', whyNot: 'Autoimmune hepatitis is anti-smooth-muscle positive with a hepatocellular (transaminase-predominant) pattern.' },
+      { id: 'c', text: 'Primary sclerosing cholangitis', whyNot: 'PSC is a beaded-duct disease of men with ulcerative colitis and p-ANCA, not AMA.' },
+      { id: 'd', text: 'Viral hepatitis', whyNot: 'Viral hepatitis is diagnosed by serologies and raises transaminases; it does not produce anti-mitochondrial antibodies.' },
+    ],
+    discriminator: 'Anti-mitochondrial antibodies with a cholestatic, itchy picture in a middle-aged woman is primary biliary cholangitis — the AMA is over 90% sensitive.',
+    tags: { system: 'gi', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.6,
+    source: [{ ref: 'AASLD Primary Biliary Cholangitis Guidance', year: 2018 }],
+  },
+  {
+    itemId: 'assoc-rib-notching-1', version: 1, type: 'association', conceptId: 'assoc-rib-notching',
+    stem: 'Rib notching on chest X-ray with upper-extremity hypertension and weak, delayed femoral pulses in a young patient.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Coarctation of the aorta', correct: true },
+      { id: 'b', text: 'Essential hypertension', whyNot: 'Essential hypertension does not carve notches in the ribs or give an arm–leg pulse and pressure gap.' },
+      { id: 'c', text: 'Patent ductus arteriosus', whyNot: 'A PDA gives a continuous machinery murmur and wide pulse pressure, not rib notching with radiofemoral delay.' },
+      { id: 'd', text: 'Takayasu arteritis', whyNot: 'Takayasu causes pulseless upper limbs in young women, but not the classic rib notching of collateral flow in coarctation.' },
+    ],
+    discriminator: 'Rib notching plus upper-body hypertension with radiofemoral delay is coarctation — dilated intercostal collaterals erode the ribs to bypass the narrowing.',
+    teachingPoint: 'Coarctation is associated with bicuspid aortic valve and with Turner syndrome.',
+    tags: { system: 'cardiovascular', complaint: 'buzzword', rotation: ['im', 'peds'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.55,
+    source: [{ ref: 'AHA/ACC Adult Congenital Heart Disease Guideline', year: 2018 }],
+  },
+  {
+    itemId: 'assoc-currant-jelly-1', version: 1, type: 'association', conceptId: 'assoc-currant-jelly',
+    stem: 'Thick "currant-jelly" sputum and a cavitating upper-lobe pneumonia in an alcoholic.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Klebsiella pneumoniae', correct: true },
+      { id: 'b', text: 'Streptococcus pneumoniae', whyNot: 'Pneumococcus gives rusty sputum and lobar consolidation, not gelatinous currant-jelly sputum with cavitation.' },
+      { id: 'c', text: 'Mycoplasma pneumoniae', whyNot: 'Mycoplasma is a walking pneumonia with scant sputum and interstitial infiltrates, not a cavitating abscess.' },
+      { id: 'd', text: 'Pseudomonas aeruginosa', whyNot: 'Pseudomonas favours cystic fibrosis and ventilated patients; the alcoholic with currant-jelly sputum is classic Klebsiella.' },
+    ],
+    discriminator: 'Currant-jelly sputum with an upper-lobe cavitating pneumonia in an alcoholic or diabetic is Klebsiella — its thick capsule bulges the fissure on the film.',
+    tags: { system: 'infectious', complaint: 'buzzword', rotation: ['im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.55,
+    source: [{ ref: 'ATS/IDSA Community-acquired Pneumonia Guideline', year: 2019 }],
+  },
+  {
+    itemId: 'assoc-nf1-1', version: 1, type: 'association', conceptId: 'assoc-nf1',
+    stem: 'Six café-au-lait macules, axillary freckling and Lisch nodules on the iris.',
+    vitals: [], findings: [],
+    options: [
+      { id: 'a', text: 'Neurofibromatosis type 1', correct: true },
+      { id: 'b', text: 'Neurofibromatosis type 2', whyNot: 'NF2 is defined by bilateral acoustic schwannomas, not café-au-lait spots with Lisch nodules.' },
+      { id: 'c', text: 'Tuberous sclerosis', whyNot: 'Tuberous sclerosis brings ash-leaf spots, angiofibromas and seizures, not Lisch nodules.' },
+      { id: 'd', text: 'McCune–Albright syndrome', whyNot: 'McCune–Albright has irregular café-au-lait borders with precocious puberty and bone dysplasia, not Lisch nodules.' },
+    ],
+    discriminator: 'Café-au-lait macules, axillary freckling and iris Lisch nodules are the diagnostic triad of neurofibromatosis type 1 — a chromosome 17 neurocutaneous disorder.',
+    tags: { system: 'neuro', complaint: 'buzzword', rotation: ['peds', 'im'], level: 'both', boards: ['step1', 'step2'] },
+    difficultySeed: 0.55,
+    source: [{ ref: 'NIH Consensus Criteria for NF1', year: 2021 }],
+  },
 ];
+
+/** The full bank, board tags normalised. */
+export const ITEMS: Item[] = RAW.map(normalizeItem);
 
 /** Rotation and course focus definitions (mirrors the mockup). */
 export interface FocusOption {
@@ -515,10 +1107,23 @@ export const ROTATIONS: FocusOption[] = [
   { id: 'fm', name: 'Family Med', topicLine: 'clinic complaints, chronic care', systems: ['cardiovascular', 'pulmonary'], rotationTag: 'fm' },
 ];
 
+/** Board-level scopes for the Focus screen. */
+export const BOARD_LEVELS: { id: BoardLevel | 'all'; label: string; blurb: string }[] = [
+  { id: 'all', label: 'All levels', blurb: 'Everything in the bank, unfiltered.' },
+  { id: 'step1', label: 'Step 1', blurb: 'Mechanism, basic science, and buzzword pattern-recognition.' },
+  { id: 'step2', label: 'Step 2 CK', blurb: 'Clinical diagnosis and the next best step on the wards.' },
+  { id: 'step3', label: 'Step 3', blurb: 'Management, thresholds, and sequencing.' },
+];
+
 export function conceptById(id: string): Concept | undefined {
   return CONCEPTS.find((c) => c.conceptId === id);
 }
 
 export function itemsForConcept(conceptId: string): Item[] {
   return ITEMS.filter((i) => i.conceptId === conceptId);
+}
+
+/** Does an item serve the given board scope? 'all' matches everything. */
+export function servesBoard(item: Item, board: BoardLevel | 'all'): boolean {
+  return board === 'all' || item.tags.boards.includes(board);
 }

@@ -1,19 +1,24 @@
 /* ══════════════════════════════════════════════════════════════
-   The drill — rapid differentials.
-   12 items. The timer affects bonus points only, never
-   correctness. Feedback is immediate and short: one sentence on
-   the discriminator, one on the best distractor.
+   The drill — one screen, every mini-game.
+   The set is built for whichever game launched it (Rapid
+   Differentials, ECG Rhythms, Buzzword Blitz) and narrowed by the
+   board scope. The timer affects bonus points only, never
+   correctness. Feedback is immediate and short: one sentence on the
+   discriminator, one on the best distractor.
    ══════════════════════════════════════════════════════════════ */
 
 import type { Ctx } from './app';
-import type { Item, SessionItemResult } from '../types';
+import type { GameId, Item, SessionItemResult } from '../types';
 import { CONCEPTS, ITEMS, conceptById } from '../content/bank';
+import { gameById, type GameDef } from '../content/games';
 import { buildSet } from '../engine/session';
 import { pointsFor } from '../engine/scoring';
 import { commitSession } from '../state/store';
 import { el, esc, fmtSeconds } from './dom';
+import { renderEcg } from './ecgRenderer';
 
 export interface SummaryPayload {
+  game: GameId;
   items: Item[];
   results: SessionItemResult[];
   moves: { topic: string; before: number; after: number }[];
@@ -24,15 +29,32 @@ export interface SummaryPayload {
 const CLOSE_ICON =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>';
 
+/** Noun for the counter, per game. */
+const UNIT: Record<GameId, string> = { rapid_ddx: 'Item', ecg: 'Rhythm', buzzword: 'Buzzword' };
+
 export function renderDrill(ctx: Ctx): HTMLElement {
+  const payload = ctx.payload as { game?: GameId } | undefined;
+  const game = gameById(payload?.game ?? 'rapid_ddx');
   const startedAt = new Date();
-  const set = buildSet(ITEMS, CONCEPTS, ctx.state, startedAt);
+  const set = buildSet(ITEMS, CONCEPTS, ctx.state, startedAt, {
+    types: game.itemTypes,
+    board: ctx.state.focus.boards,
+    setSize: game.setSize,
+  });
   const timerSeconds = ctx.state.settings.timerSeconds;
   const results: SessionItemResult[] = [];
 
   if (set.length === 0) {
-    const empty = el(`<div class="flex-col"><div class="scroll" style="padding-top:24px">
-      <p class="intro">Nothing to drill for this focus yet — pick another focus.</p></div></div>`);
+    const empty = el(`<div class="flex-col">
+      <div class="topbar drill-top">
+        <button class="iconb" type="button" aria-label="Back">${CLOSE_ICON}</button>
+        <span class="crumb">${esc(game.name)}</span>
+      </div>
+      <div class="scroll" style="padding-top:24px">
+        <p class="intro">No ${esc(UNIT[game.id].toLowerCase())}s available for this focus and board level yet. Widen the board scope in Focus, or try another game.</p>
+      </div>
+    </div>`);
+    empty.querySelector('.iconb')!.addEventListener('click', () => ctx.go('today'));
     return empty;
   }
 
@@ -99,23 +121,24 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     }, timerSeconds * 1000);
   }
 
-  function showItem(): void {
-    const item = set[index];
-    const concept = conceptById(item.conceptId);
-    locked = false;
-    selected = new Set();
-    itemStart = Date.now();
-    renderPips();
-    startTimer();
-
-    const multi = item.type === 'build_ddx' && (item.selectCount ?? 0) > 1;
-    body.innerHTML = '';
-    body.appendChild(
-      el(`<p class="lab item-lab">Item ${index + 1} of ${set.length} · ${esc(concept?.topic ?? '')}${
-        multi ? ` · pick ${item.selectCount}` : ''
-      }</p>`),
-    );
-
+  /** The prompt block — differs by game: rhythm strip, buzzword, or vignette. */
+  function promptBlock(item: Item): HTMLElement {
+    if (item.ecg) {
+      const dr = renderEcg(item.ecg);
+      const paths = dr.paths.map((p) => `<path class="ecg-${p.cls}" d="${p.d}"/>`).join('');
+      const card = el(`<div class="ecg-card">
+        <div class="ecg-lead">${esc(dr.label)}</div>
+        <svg class="ecg-svg" viewBox="0 0 ${dr.width} ${dr.height}" preserveAspectRatio="none" role="img" aria-label="Rhythm strip to interpret">${paths}</svg>
+        ${item.stem ? `<p class="ecg-context">${esc(item.stem)}</p>` : ''}
+      </div>`);
+      return card;
+    }
+    if (item.type === 'association') {
+      return el(`<div class="vig assoc">
+        <span class="lab assoc-lab">Name the diagnosis</span>
+        <p class="assoc-prompt">${esc(item.stem)}</p>
+      </div>`);
+    }
     const vig = el(`<div class="vig"><p>${esc(item.stem)}</p></div>`);
     if (item.vitals.length > 0) {
       vig.appendChild(
@@ -129,7 +152,27 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     for (const f of item.findings) {
       vig.appendChild(el(`<p class="extra">${esc(f)}</p>`));
     }
-    body.appendChild(vig);
+    return vig;
+  }
+
+  function showItem(): void {
+    const item = set[index];
+    const concept = conceptById(item.conceptId);
+    locked = false;
+    selected = new Set();
+    itemStart = Date.now();
+    renderPips();
+    startTimer();
+
+    const multi = item.type === 'build_ddx' && (item.selectCount ?? 0) > 1;
+    body.innerHTML = '';
+    body.appendChild(
+      el(`<p class="lab item-lab">${UNIT[game.id]} ${index + 1} of ${set.length} · ${esc(concept?.topic ?? '')}${
+        multi ? ` · pick ${item.selectCount}` : ''
+      }</p>`),
+    );
+
+    body.appendChild(promptBlock(item));
 
     // authored order always lists the answer first — shuffle for display
     // so "A" never becomes the tell
@@ -216,7 +259,7 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     body.querySelector('#resultSlot')!.appendChild(resultCard(item, correct, selected, points, elapsedMs));
 
     const last = index === set.length - 1;
-    checkBtn.textContent = last ? 'Finish set' : 'Next item';
+    checkBtn.textContent = last ? 'Finish set' : 'Next';
     checkBtn.className = 'btn pulse';
     checkBtn.disabled = false;
     checkBtn.focus();
@@ -230,9 +273,7 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     elapsedMs: number,
   ): HTMLElement {
     const answers = item.options.filter((o) => o.correct).map((o) => o.text);
-    const title = correct
-      ? answers.join(' · ')
-      : `It was ${answers.join(', ')}`;
+    const title = correct ? answers.join(' · ') : `It was ${answers.join(', ')}`;
     const xp = correct
       ? `+${points}${timerSeconds > 0 && !timedOut ? ' · ' + fmtSeconds(elapsedMs) : ''}`
       : 'no points';
@@ -268,16 +309,17 @@ export function renderDrill(ctx: Ctx): HTMLElement {
 
   function finish(): void {
     clearTimeout(timeoutHandle);
-    const outcome = commitSession(ctx.state, results, startedAt, new Date());
+    const outcome = commitSession(ctx.state, results, game.id, startedAt, new Date());
     ctx.setState(outcome.state);
-    const payload: SummaryPayload = {
+    const summary: SummaryPayload = {
+      game: game.id,
       items: set,
       results,
       moves: outcome.masteryMoves,
       repaired: outcome.streakUpdate.repaired,
       points: totalPoints(),
     };
-    ctx.go('summary', payload);
+    ctx.go('summary', summary);
   }
 
   checkBtn.addEventListener('click', () => (locked ? advance() : check()));
@@ -300,3 +342,5 @@ export function renderDrill(ctx: Ctx): HTMLElement {
   showItem();
   return root;
 }
+
+export type { GameDef };

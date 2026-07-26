@@ -5,8 +5,8 @@
    ══════════════════════════════════════════════════════════════ */
 
 import type { Ctx } from './app';
-import type { FocusMode } from '../types';
-import { COURSES, ROTATIONS } from '../content/bank';
+import type { BoardLevel, FocusMode } from '../types';
+import { BOARD_LEVELS, COURSES, ROTATIONS } from '../content/bank';
 import { defaultSettings } from '../state/store';
 import { el, esc } from './dom';
 
@@ -19,6 +19,7 @@ export function renderFocus(ctx: Ctx): HTMLElement {
     mode: ctx.state.focus.mode as FocusMode,
     id: ctx.state.focus.id,
     mixPercent: ctx.state.focus.mixPercent,
+    boards: ctx.state.focus.boards as BoardLevel | 'all',
     timerSeconds: ctx.state.settings.timerSeconds,
     dailyGoal: ctx.state.settings.dailyGoal,
   };
@@ -35,6 +36,15 @@ export function renderFocus(ctx: Ctx): HTMLElement {
         <button type="button" role="tab" data-mode="rotation">Rotation</button>
       </div>
       <div class="grid" id="focusGrid"></div>
+
+      <p class="sect">Board level</p>
+      <div class="seg seg-wrap" id="boardSeg">
+        ${BOARD_LEVELS.map(
+          (b) => `<button type="button" data-board="${b.id}">${esc(b.label)}</button>`,
+        ).join('')}
+      </div>
+      <p class="setting-note" id="boardNote"></p>
+
       <div class="mix">
         <div class="mix-top"><b>Mix</b><em id="mixVal"></em></div>
         <input type="range" id="mix" min="0" max="100" step="5" aria-label="Proportion of items drawn from your current block">
@@ -75,6 +85,8 @@ export function renderFocus(ctx: Ctx): HTMLElement {
   const timerSeg = root.querySelector('#timerSeg')!;
   const goalSeg = root.querySelector('#goalSeg')!;
   const modeNote = root.querySelector('#modeNote')!;
+  const boardSeg = root.querySelector('#boardSeg')!;
+  const boardNote = root.querySelector('#boardNote')!;
 
   function options() {
     return draft.mode === 'rotation' ? ROTATIONS : COURSES;
@@ -118,6 +130,13 @@ export function renderFocus(ctx: Ctx): HTMLElement {
     });
   }
 
+  function renderBoard() {
+    boardSeg.querySelectorAll('button').forEach((b) => {
+      b.setAttribute('aria-selected', String((b as HTMLElement).dataset.board === draft.boards));
+    });
+    boardNote.textContent = BOARD_LEVELS.find((b) => b.id === draft.boards)?.blurb ?? '';
+  }
+
   function renderNote() {
     modeNote.innerHTML =
       '<span class="lab">How the modes differ</span>' +
@@ -152,16 +171,22 @@ export function renderFocus(ctx: Ctx): HTMLElement {
     draft.dailyGoal = Number((b as HTMLElement).dataset.goal);
     renderGoal();
   });
+  boardSeg.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest('button');
+    if (!b) return;
+    draft.boards = (b as HTMLElement).dataset.board as BoardLevel | 'all';
+    renderBoard();
+  });
 
   root.querySelector('#saveFocus')!.addEventListener('click', () => {
     ctx.setState({
       ...ctx.state,
-      focus: { mode: draft.mode, id: draft.id, mixPercent: draft.mixPercent },
+      focus: { mode: draft.mode, id: draft.id, mixPercent: draft.mixPercent, boards: draft.boards },
       settings: { timerSeconds: draft.timerSeconds, dailyGoal: draft.dailyGoal },
     });
     ctx.go('today');
   });
 
-  renderModeSeg(); renderGrid(); renderMix(); renderTimer(); renderGoal(); renderNote();
+  renderModeSeg(); renderGrid(); renderMix(); renderTimer(); renderGoal(); renderBoard(); renderNote();
   return root;
 }

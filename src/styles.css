@@ -279,4 +279,30 @@ input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:4px;
 .tab[aria-current="true"]{color:var(--depth)}
 .tab:focus-visible{outline:2px solid var(--depth);outline-offset:-2px;border-radius:8px}
 
+/* ── board-level segment (4 up) ────────────────────────────── */
+.seg-wrap button{font-size:12.5px;padding:9px 4px}
+
+/* ── crumb (drill/empty headers) ───────────────────────────── */
+.crumb{flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ── ECG mini-game ─────────────────────────────────────────── */
+.ecg-card{background:var(--card);border:1px solid var(--rule);border-radius:15px;padding:14px;box-shadow:0 1px 2px rgba(18,40,55,.04)}
+.ecg-lead{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+.ecg-svg{
+  display:block;width:100%;height:132px;border-radius:10px;
+  background:
+    linear-gradient(var(--rule) 1px, transparent 1px) 0 0 / 100% 11px,
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px) 0 0 / 11px 100%,
+    var(--sunk);
+}
+.ecg-main{fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+.ecg-faint{fill:none;stroke:var(--ink-3);stroke-width:1.1;opacity:.55}
+.ecg-context{margin:11px 0 0;font-size:14px;line-height:1.45;color:var(--ink-2)}
+@media (prefers-color-scheme: dark){.ecg-main{stroke:var(--pulse)}}
+
+/* ── buzzword prompt ───────────────────────────────────────── */
+.vig.assoc{border-left:3px solid var(--plum)}
+.assoc-lab{color:var(--plum);display:block;margin-bottom:9px}
+.assoc-prompt{margin:0;font-family:'Archivo',sans-serif;font-weight:600;font-size:20px;line-height:1.32;color:var(--ink);letter-spacing:-.01em}
+
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}}

@@ -6,7 +6,7 @@
    this exact payload becomes the sync document.
    ══════════════════════════════════════════════════════════════ */
 
-import type { AppState, SessionItemResult, SessionRecord, Settings } from '../types';
+import type { AppState, GameId, SessionItemResult, SessionRecord, Settings } from '../types';
 import { conceptById } from '../content/bank';
 import { applyResult, newTopicMastery } from '../engine/mastery';
 import { gradeFor, newSchedule, review } from '../engine/scheduler';
@@ -23,7 +23,7 @@ export function defaultSettings(mode: 'course' | 'rotation'): Settings {
 export function defaultState(): AppState {
   return {
     version: STATE_VERSION,
-    focus: { mode: 'rotation', id: 'im', mixPercent: 75 },
+    focus: { mode: 'rotation', id: 'im', mixPercent: 75, boards: 'all' },
     settings: defaultSettings('rotation'),
     schedules: {},
     mastery: {},
@@ -39,7 +39,10 @@ export function loadState(storage: Pick<Storage, 'getItem'> = localStorage): App
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as AppState;
     if (parsed.version !== STATE_VERSION) return defaultState();
-    return { ...defaultState(), ...parsed };
+    const base = defaultState();
+    // deep-merge focus so a payload from before board scoping still
+    // gets a valid `boards` default
+    return { ...base, ...parsed, focus: { ...base.focus, ...parsed.focus } };
   } catch {
     return defaultState();
   }
@@ -64,6 +67,7 @@ export interface CommitOutcome {
 export function commitSession(
   state: AppState,
   results: SessionItemResult[],
+  game: GameId,
   startedAt: Date,
   now: Date,
 ): CommitOutcome {
@@ -89,6 +93,7 @@ export function commitSession(
     startedAt: startedAt.toISOString(),
     finishedAt: now.toISOString(),
     focus: { ...state.focus },
+    game,
     results,
     totalPoints,
   };

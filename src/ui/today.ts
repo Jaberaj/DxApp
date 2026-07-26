@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
-   Today — the home screen. Focus bar, the queued set, the rhythm
-   strip, and where you stand.
+   Today — the home screen. Focus bar, the mini-games, the rhythm
+   strip, and where you stand. (V1: differentials and drills only —
+   the case-presentation coach is a later chapter.)
    ══════════════════════════════════════════════════════════════ */
 
 import type { Ctx } from './app';
@@ -9,13 +10,31 @@ import { ecgPath } from './ecg';
 import { focusOption } from '../engine/session';
 import { band, decayedScore } from '../engine/mastery';
 import { currentLength, dateKey } from '../engine/streak';
-import { CONCEPTS, ITEMS } from '../content/bank';
+import { CONCEPTS, ITEMS, BOARD_LEVELS } from '../content/bank';
+import { GAMES } from '../content/games';
 import { inBlock } from '../engine/session';
 
 const PULSE_ICON =
   '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>';
 const CHEVRON =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>';
+
+const ACCENT_BG: Record<string, string> = {
+  pulse: 'var(--pulse-l)',
+  depth: 'var(--depth-l)',
+  plum: 'var(--plum-l)',
+  clay: 'var(--clay-l)',
+};
+const ACCENT_STROKE: Record<string, string> = {
+  pulse: 'var(--pulse)',
+  depth: 'var(--depth)',
+  plum: 'var(--plum)',
+  clay: 'var(--clay)',
+};
+
+function boardLabel(id: string): string {
+  return BOARD_LEVELS.find((b) => b.id === id)?.label ?? 'All levels';
+}
 
 export function renderToday(ctx: Ctx): HTMLElement {
   const { state } = ctx;
@@ -42,38 +61,29 @@ export function renderToday(ctx: Ctx): HTMLElement {
     <span class="swatch" style="background:${state.focus.mode === 'rotation' ? 'var(--depth)' : 'var(--pulse)'}"></span>
     <span class="txt">
       <b>${esc(opt.name)}</b>
-      <span>${state.focus.mode === 'rotation' ? 'Rotation' : 'Systems course'} · ${state.focus.mixPercent}% on block, ${100 - state.focus.mixPercent}% review</span>
+      <span>${state.focus.mode === 'rotation' ? 'Rotation' : 'Systems course'} · ${esc(boardLabel(state.focus.boards))} · ${state.focus.mixPercent}% on block</span>
     </span>
     ${CHEVRON}
   </button>`);
   focusBar.addEventListener('click', () => ctx.go('focus'));
   scroll.appendChild(focusBar);
 
-  // ── queued set ──
-  scroll.appendChild(el('<p class="sect">Queued for you</p>'));
-  const drillTask = el(`<button class="task" type="button">
-    <span class="ic" style="background:var(--pulse-l)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pulse)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>
-    </span>
-    <span class="bd">
-      <b>Rapid differentials</b>
-      <span>12 items · ${esc(opt.topicLine)} · ~6 min</span>
-    </span>
-    <span class="go">${CHEVRON}</span>
-  </button>`);
-  drillTask.addEventListener('click', () => ctx.go('drill'));
-  scroll.appendChild(drillTask);
-
-  // presentation coach is V2 — locked with an explainer, per the guide
-  scroll.appendChild(el(`<div class="task locked" aria-disabled="true">
-    <span class="ic" style="background:var(--plum-l)">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--plum)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>
-    </span>
-    <span class="bd">
-      <b>Present a case</b>
-      <span>Coming next — say your reasoning out loud, get graded on pacing and structure</span>
-    </span>
-  </div>`));
+  // ── mini-games ──
+  scroll.appendChild(el('<p class="sect">Mini-games</p>'));
+  for (const game of GAMES) {
+    const card = el(`<button class="task" type="button">
+      <span class="ic" style="background:${ACCENT_BG[game.accent]}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${ACCENT_STROKE[game.accent]}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${game.icon}</svg>
+      </span>
+      <span class="bd">
+        <b>${esc(game.name)}</b>
+        <span>${esc(game.tagline)}</span>
+      </span>
+      <span class="go">${CHEVRON}</span>
+    </button>`);
+    card.addEventListener('click', () => ctx.go('drill', { game: game.id }));
+    scroll.appendChild(card);
+  }
 
   // ── rhythm strip: last 7 days ──
   scroll.appendChild(el('<p class="sect">Rhythm</p>'));

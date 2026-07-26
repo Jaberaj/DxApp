@@ -20,7 +20,7 @@ export function renderSummary(ctx: Ctx): HTMLElement {
     return el('<div></div>');
   }
 
-  const { items, results, moves, repaired, points } = payload;
+  const { game, items, results, moves, repaired, points } = payload;
   const n = results.length;
   const nCorrect = results.filter((r) => r.correct).length;
   const missIdx = results.map((r, i) => (r.correct ? -1 : i)).filter((i) => i >= 0);
@@ -100,7 +100,7 @@ export function renderSummary(ctx: Ctx): HTMLElement {
     </div>`));
   }
 
-  root.querySelector('#again')!.addEventListener('click', () => ctx.go('drill'));
+  root.querySelector('#again')!.addEventListener('click', () => ctx.go('drill', { game }));
   root.querySelector('#home')!.addEventListener('click', () => ctx.go('today'));
   return root;
 }

@@ -22,7 +22,7 @@ describe('commitSession', () => {
       result({}),
       result({ itemId: 'vt-vs-svt-1', conceptId: 'vt-vs-svt', correct: false, points: 0 }),
     ];
-    const { state, masteryMoves, streakUpdate } = commitSession(defaultState(), results, START, NOW);
+    const { state, masteryMoves, streakUpdate } = commitSession(defaultState(), results, 'rapid_ddx', START, NOW);
 
     expect(state.schedules['pe-recognition']).toBeDefined();
     expect(state.schedules['vt-vs-svt']).toBeDefined();
@@ -31,6 +31,7 @@ describe('commitSession', () => {
     expect(state.totalPoints).toBe(40);
     expect(state.sessions).toHaveLength(1);
     expect(state.sessions[0].results).toHaveLength(2);
+    expect(state.sessions[0].game).toBe('rapid_ddx');
     expect(streakUpdate.goalMet).toBe(true);
 
     const pe = masteryMoves.find((m) => m.topic === 'Pulmonary embolism');
@@ -41,7 +42,7 @@ describe('commitSession', () => {
   it('does not mutate the input state', () => {
     const before = defaultState();
     const snapshot = JSON.stringify(before);
-    commitSession(before, [result({})], START, NOW);
+    commitSession(before, [result({})], 'rapid_ddx', START, NOW);
     expect(JSON.stringify(before)).toBe(snapshot);
   });
 });
@@ -53,11 +54,12 @@ describe('persistence', () => {
       getItem: (k: string) => mem.get(k) ?? null,
       setItem: (k: string, v: string) => void mem.set(k, v),
     };
-    const { state } = commitSession(defaultState(), [result({})], START, NOW);
+    const { state } = commitSession(defaultState(), [result({})], 'rapid_ddx', START, NOW);
     saveState(state, storage);
     const loaded = loadState(storage);
     expect(loaded.totalPoints).toBe(40);
     expect(loaded.schedules['pe-recognition']).toBeDefined();
+    expect(loaded.focus.boards).toBe('all');
   });
 
   it('falls back to defaults on corrupt or missing data', () => {

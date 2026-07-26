@@ -11,7 +11,21 @@ export type ItemType =
   | 'discriminator'  // two diagnoses named up front: which finding separates them?
   | 'next_step'      // diagnosis given/obvious → what do you order?
   | 'cant_miss'      // which must you exclude before anything else?
-  | 'build_ddx';     // multi-select: pick the ones that belong
+  | 'build_ddx'      // multi-select: pick the ones that belong
+  | 'management'     // first-line / threshold / contraindication (treatments)
+  | 'ecg'            // read the rhythm strip
+  | 'association';   // buzzword / gene / finding → diagnosis
+
+/**
+ * Board levels the content maps to. An item can serve several:
+ *   Step 1 — mechanism, basic science, buzzword pattern-recognition
+ *   Step 2 CK — clinical diagnosis and next best step on the wards
+ *   Step 3 — management, thresholds, sequencing, outpatient
+ */
+export type BoardLevel = 'step1' | 'step2' | 'step3';
+
+/** The mini-games. Each draws a distinct slice of the item bank. */
+export type GameId = 'rapid_ddx' | 'ecg' | 'buzzword';
 
 export type System =
   | 'cardiovascular'
@@ -44,6 +58,30 @@ export interface ItemOption {
   whyNot?: string;
 }
 
+/**
+ * Parametric description of a rhythm strip. Schematic, not
+ * diagnostic-grade — enough to make the teaching morphology
+ * unmistakable. Consumed by the ECG renderer.
+ */
+export interface EcgSpec {
+  /** ventricular rate in bpm — controls beat spacing */
+  rate: number;
+  regularity: 'regular' | 'irregular' | 'irregularly_irregular';
+  pWave: 'normal' | 'absent' | 'dissociated' | 'sawtooth' | 'fibrillatory';
+  /** PR interval in ms; > 200 draws a long segment (block) */
+  prMs?: number;
+  qrsWide?: boolean;
+  /** ST-segment shift as a fraction of R amplitude, + up / − down */
+  stShift?: number;
+  tWave?: 'normal' | 'peaked' | 'inverted' | 'flat';
+  /** WPW slurred upstroke */
+  delta?: boolean;
+  /** whole-strip special morphologies that ignore the beat model */
+  special?: 'torsades' | 'vfib' | 'asystole';
+  /** lead label, e.g. "Lead II" */
+  lead?: string;
+}
+
 export interface Item {
   itemId: string;
   version: number;
@@ -61,6 +99,8 @@ export interface Item {
   options: ItemOption[];
   /** For build_ddx: how many options must be selected. */
   selectCount?: number;
+  /** Present on ecg items: the rhythm strip to render as the prompt. */
+  ecg?: EcgSpec;
   /** ONE sentence. The teach. This is the product. */
   discriminator: string;
   /** optional second sentence, max */
@@ -70,6 +110,8 @@ export interface Item {
     complaint: string;
     rotation: string[];
     level: Level;
+    /** board levels this item is appropriate for */
+    boards: BoardLevel[];
   };
   /**
    * Seed guess 0–1 (p of answering correctly). Overwritten by
@@ -132,6 +174,8 @@ export interface FocusState {
   id: string;
   /** 0–100: percent of the set drawn from the current block */
   mixPercent: number;
+  /** board-level scope; 'all' leaves the bank unfiltered */
+  boards: BoardLevel | 'all';
 }
 
 export interface Settings {
@@ -157,6 +201,8 @@ export interface SessionRecord {
   startedAt: string;
   finishedAt: string;
   focus: FocusState;
+  /** which mini-game produced this set */
+  game: GameId;
   results: SessionItemResult[];
   totalPoints: number;
 }

@@ -4,6 +4,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { CONCEPTS, ITEMS } from '../src/content/bank';
+import type { BoardLevel } from '../src/types';
+
+const VALID_BOARDS: BoardLevel[] = ['step1', 'step2', 'step3'];
 
 describe('item bank integrity', () => {
   it('item ids are unique', () => {
@@ -69,5 +72,41 @@ describe('item bank integrity', () => {
   it('the flagship discriminator type is well represented', () => {
     const n = ITEMS.filter((i) => i.type === 'discriminator').length;
     expect(n).toBeGreaterThanOrEqual(5);
+  });
+
+  it('every item carries at least one valid board level', () => {
+    for (const item of ITEMS) {
+      expect(item.tags.boards.length, item.itemId).toBeGreaterThan(0);
+      for (const b of item.tags.boards) {
+        expect(VALID_BOARDS, item.itemId).toContain(b);
+      }
+    }
+  });
+
+  it('every board level has some content', () => {
+    for (const b of VALID_BOARDS) {
+      expect(ITEMS.some((i) => i.tags.boards.includes(b)), b).toBe(true);
+    }
+  });
+
+  it('ecg items carry a rhythm spec; association items do not', () => {
+    const ecg = ITEMS.filter((i) => i.type === 'ecg');
+    expect(ecg.length).toBeGreaterThanOrEqual(8);
+    for (const item of ecg) expect(item.ecg, item.itemId).toBeDefined();
+
+    const assoc = ITEMS.filter((i) => i.type === 'association');
+    expect(assoc.length).toBeGreaterThanOrEqual(10);
+    for (const item of assoc) expect(item.ecg, item.itemId).toBeUndefined();
+  });
+
+  it('several concepts are tested through more than one item type', () => {
+    const typesByConcept = new Map<string, Set<string>>();
+    for (const item of ITEMS) {
+      const s = typesByConcept.get(item.conceptId) ?? new Set();
+      s.add(item.type);
+      typesByConcept.set(item.conceptId, s);
+    }
+    const multi = [...typesByConcept.values()].filter((s) => s.size >= 2).length;
+    expect(multi).toBeGreaterThanOrEqual(2);
   });
 });

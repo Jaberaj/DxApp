@@ -9,10 +9,17 @@ import { band, decayedScore } from '../engine/mastery';
 import { currentLength } from '../engine/streak';
 import { el, esc } from './dom';
 
-const SYSTEM_NAMES: Partial<Record<System, string>> = {
+const SYSTEM_NAMES: Record<System, string> = {
   cardiovascular: 'Cardiovascular',
   pulmonary: 'Pulmonary',
   renal: 'Renal',
+  gi: 'GI & Liver',
+  endocrine: 'Endocrine',
+  neuro: 'Neuroscience',
+  heme_onc: 'Heme & Onc',
+  infectious: 'Infectious Disease',
+  msk_rheum: 'MSK & Rheumatology',
+  reproductive: 'Reproductive',
 };
 
 const BAND_LABEL = { shaky: 'shaky', working: 'working', solid: 'solid' } as const;
