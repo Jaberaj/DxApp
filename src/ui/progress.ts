@@ -20,6 +20,10 @@ const SYSTEM_NAMES: Record<System, string> = {
   infectious: 'Infectious Disease',
   msk_rheum: 'MSK & Rheumatology',
   reproductive: 'Reproductive',
+  dermatology: 'Dermatology',
+  psychiatry: 'Psychiatry',
+  multisystem: 'Multisystem & Critical Care',
+  pediatrics: 'Pediatrics',
 };
 
 const BAND_LABEL = { shaky: 'shaky', working: 'working', solid: 'solid' } as const;

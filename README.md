@@ -79,22 +79,43 @@ differ (`src/content/games.ts`).
   (green monitor trace for the ECG game), one-handed layout with primary
   actions in the bottom third, fast cold start.
 
-## Content bank
+## Content model, taxonomy & validation
 
-~55 items across ~48 concepts and ten body systems: the differentials core
-(chest pain, dyspnea, AKI, electrolytes), treatment/management items for
-Step 2–3, ten ECG rhythms, and fifteen buzzword associations spanning
-heme/onc, rheumatology, renal, GI, cardiology, ID, and neurology. Difficulty
-seeds are author guesses, to be overwritten by observed p(correct) once items
-have real exposures.
+The unit of content is the **concept** (a diagnosis or management decision); a
+**vignette** is one way it can present, and a concept can carry several. Concept
+IDs are permanent join keys for mastery, scheduling, and coverage.
+
+- **Taxonomy** (`src/content/taxonomy.ts`) — the single source of truth for
+  coverage: system → subtopic → concept, spanning the full public USMLE Content
+  Outline (12 organ systems + 2 cross-cutting, 108 subtopics). Most subtopics
+  are empty on purpose — an empty subtopic is a *visible, trackable gap*, which
+  is what makes "cover the tested USMLE topics" measurable. `npm run migrate`
+  writes [MIGRATION_REPORT.md](MIGRATION_REPORT.md) listing exactly which
+  subtopics still need content.
+- **Build-time validation** (`src/content/validation.ts`, Zod) — runs as a
+  `prebuild` gate, so `npm run build` **fails** on malformed content, a dangling
+  distractor/concept reference, a concept placed outside the taxonomy or in the
+  wrong system, or a source that cites a **commercial question bank**. Reputable
+  primary sources only (guidelines, standard references); no NBME/UWorld/AMBOSS/
+  Kaplan material anywhere.
+- **Review discipline** — every concept carries `reviewedBy`/`reviewedOn`.
+  LLM-drafted clinical content is plausible-but-sometimes-wrong, so all migrated
+  content is marked `UNREVIEWED`; the build *warns* on it and it must not reach a
+  learner as validated until a physician signs off.
+
+Current bank: **56 vignettes / 48 concepts / 25 of 108 subtopics**, cardiology-
+and pulmonary-heavy, all `UNREVIEWED`. Difficulty seeds are author guesses, to
+be overwritten by observed p(correct) once telemetry runs.
 
 ## Architecture
 
 ```
 src/
-  types.ts            item schema + learner-state types (the contract)
+  types.ts            concept/vignette schema + learner-state types
   content/
-    bank.ts           concepts and items; board tags normalised on export
+    bank.ts           concepts & vignettes; taxonomy + tags normalised on export
+    taxonomy.ts       system → subtopic tree (coverage source of truth)
+    validation.ts     Zod schemas + source-integrity checks (build gate)
     games.ts          the mini-game registry (id, item types, set size)
   engine/             pure logic, fully unit-tested, no DOM
     session.ts        set builder (game filter, board scope, mix, weakness)
@@ -108,7 +129,11 @@ src/
     drill.ts          the one screen every game runs on
     ecgRenderer.ts    parametric rhythm-strip renderer
     today/focus/summary/progress.ts
-tests/                vitest suites (bank, engine, ECG renderer, games)
+  content/validation.ts  (build gate; imported by scripts + tests, not the app)
+scripts/
+  validate-content.ts control content gate (npm run validate / prebuild)
+  migrate-to-concepts.ts  enrichment census → MIGRATION_REPORT.md
+tests/                vitest suites (bank, engine, ECG, games, taxonomy, integrity)
 e2e/smoke.mjs         headless run through all three games
 ```
 

@@ -14,19 +14,27 @@
      guidance.
    ══════════════════════════════════════════════════════════════ */
 
-import type { BoardLevel, Concept, Item, Vital } from '../types';
+import type { BoardLevel, Concept, Item, PresentationType, System, Vital } from '../types';
+import { UNREVIEWED } from '../types';
+import { subtopicById } from './taxonomy';
 
 const v = (label: string, value: string, hot = false): Vital => ({ label, value, hot });
 
 /**
- * Authoring shape: board tags are optional. Everything else matches
- * Item exactly. `normalizeItem` fills boards from the item type and
- * level when the author leaves them off, so the exported bank always
- * satisfies the full Item contract.
+ * Authoring shape for a vignette: board tags and the enrichment
+ * fields are optional. `normalizeItem` fills them so the exported
+ * bank always satisfies the full Item contract.
  */
-type RawItem = Omit<Item, 'tags'> & {
+type RawItem = Omit<Item, 'tags' | 'presentation' | 'exposures' | 'pCorrect'> & {
   tags: Omit<Item['tags'], 'boards'> & { boards?: BoardLevel[] };
+  presentation?: PresentationType;
+  exposures?: number;
+  pCorrect?: number | null;
 };
+
+/** Authoring shape for a concept: enrichment fields filled at export. */
+type RawConcept = Pick<Concept, 'conceptId' | 'name' | 'system' | 'topic'> &
+  Partial<Pick<Concept, 'alsoTaggedSystems' | 'illnessScript' | 'reviewedBy' | 'reviewedOn'>>;
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
   if (raw.tags.boards) return raw.tags.boards;
@@ -46,10 +54,87 @@ function deriveBoards(raw: RawItem): BoardLevel[] {
 }
 
 function normalizeItem(raw: RawItem): Item {
-  return { ...raw, tags: { ...raw.tags, boards: deriveBoards(raw) } };
+  return {
+    ...raw,
+    tags: { ...raw.tags, boards: deriveBoards(raw) },
+    presentation: raw.presentation ?? 'classic',
+    exposures: raw.exposures ?? 0,
+    pCorrect: raw.pCorrect ?? null,
+    legacyItemId: raw.legacyItemId ?? raw.itemId,
+  };
 }
 
-export const CONCEPTS: Concept[] = [
+/**
+ * Every existing concept's home in the taxonomy. Subtopic IDs are
+ * validated against taxonomy.ts at build time; a concept missing
+ * from this map, or pointing at a subtopic in a different system,
+ * fails the content-integrity suite.
+ */
+const CONCEPT_SUBTOPIC: Record<string, string> = {
+  'pe-recognition': 'pulm.vte',
+  'pe-workup': 'pulm.vte',
+  'tension-ptx': 'pulm.pleura',
+  'spont-ptx': 'pulm.pleura',
+  'silent-chest': 'pulm.airways',
+  'copd-vs-hf': 'pulm.airways',
+  'cap-recognition': 'pulm.infection',
+  'stemi-recognition': 'cv.ischemia',
+  'stemi-vs-pericarditis': 'cv.ischemia',
+  'dissection-first': 'cv.vascular',
+  'tamponade': 'cv.pericardial',
+  'vt-vs-svt': 'cv.arrhythmia',
+  'adhf-recognition': 'cv.heart-failure',
+  'adhf-precipitant': 'cv.heart-failure',
+  'as-syncope': 'cv.valvular',
+  'pleuritic-ddx': 'pulm.pleura',
+  'prerenal-vs-atn': 'renal.aki',
+  'hyperk-first': 'renal.electrolytes',
+  'stemi-reperfusion': 'cv.ischemia',
+  'adhf-firstline': 'cv.heart-failure',
+  'anaphylaxis-firstline': 'multi.allergy-immuno',
+  'afib-anticoag': 'cv.arrhythmia',
+  'dka-firststep': 'endo.diabetes',
+  'ecg-stemi': 'cv.ischemia',
+  'ecg-vt': 'cv.arrhythmia',
+  'ecg-afib': 'cv.arrhythmia',
+  'ecg-flutter': 'cv.arrhythmia',
+  'ecg-chb': 'cv.arrhythmia',
+  'ecg-first-degree': 'cv.arrhythmia',
+  'ecg-hyperk': 'renal.electrolytes',
+  'ecg-wpw': 'cv.arrhythmia',
+  'ecg-torsades': 'cv.arrhythmia',
+  'ecg-vfib': 'cv.arrhythmia',
+  'assoc-jak2': 'heme.myeloproliferative',
+  'assoc-auer': 'heme.leukemia',
+  'assoc-philadelphia': 'heme.leukemia',
+  'assoc-smudge': 'heme.leukemia',
+  'assoc-reed-sternberg': 'heme.lymphoma',
+  'assoc-ttp': 'heme.micro',
+  'assoc-anti-ccp': 'rheum.inflammatory-arthritis',
+  'assoc-anti-dsdna': 'rheum.connective',
+  'assoc-anti-histone': 'rheum.connective',
+  'assoc-hla-b27': 'rheum.inflammatory-arthritis',
+  'assoc-anti-gbm': 'renal.glomerular',
+  'assoc-ama': 'gi.hepatic',
+  'assoc-rib-notching': 'cv.congenital',
+  'assoc-currant-jelly': 'id.respiratory-id',
+  'assoc-nf1': 'neuro.neurocutaneous',
+};
+
+/** Concepts that legitimately span more than their primary system. */
+const CONCEPT_ALSO_SYSTEMS: Record<string, System[]> = {
+  'pe-recognition': ['cardiovascular'],
+  'pe-workup': ['cardiovascular'],
+  'pleuritic-ddx': ['cardiovascular'],
+  'copd-vs-hf': ['cardiovascular'],
+  'hyperk-first': ['cardiovascular'],
+  'ecg-hyperk': ['cardiovascular'],
+  'assoc-anti-gbm': ['pulmonary'],
+  'assoc-currant-jelly': ['pulmonary'],
+  'anaphylaxis-firstline': ['pulmonary', 'cardiovascular'],
+};
+
+const RAW_CONCEPTS: RawConcept[] = [
   { conceptId: 'pe-recognition', name: 'Recognising pulmonary embolism', system: 'pulmonary', topic: 'Pulmonary embolism' },
   { conceptId: 'pe-workup', name: 'PE work-up by pretest probability', system: 'pulmonary', topic: 'Pulmonary embolism' },
   { conceptId: 'tension-ptx', name: 'Tension pneumothorax', system: 'pulmonary', topic: 'Pneumothorax & pleura' },
@@ -72,7 +157,7 @@ export const CONCEPTS: Concept[] = [
   /* ── treatment / management (Step 2–3) ─────────────────────── */
   { conceptId: 'stemi-reperfusion', name: 'STEMI reperfusion strategy', system: 'cardiovascular', topic: 'Acute coronary syndromes' },
   { conceptId: 'adhf-firstline', name: 'First-line for acute pulmonary edema', system: 'cardiovascular', topic: 'Heart failure' },
-  { conceptId: 'anaphylaxis-firstline', name: 'First-line for anaphylaxis', system: 'infectious', topic: 'Anaphylaxis & shock' },
+  { conceptId: 'anaphylaxis-firstline', name: 'First-line for anaphylaxis', system: 'multisystem', topic: 'Anaphylaxis & shock' },
   { conceptId: 'afib-anticoag', name: 'Anticoagulation threshold in AF', system: 'cardiovascular', topic: 'Tachyarrhythmias' },
   { conceptId: 'dka-firststep', name: 'First step in DKA', system: 'endocrine', topic: 'Diabetic emergencies' },
 
@@ -563,7 +648,7 @@ const RAW: RawItem[] = [
      a management decision, so the same diagnosis is met from every
      angle across sessions. */
   {
-    itemId: 'stemi-2', version: 1, type: 'cant_miss', conceptId: 'stemi-recognition',
+    itemId: 'stemi-2', version: 1, type: 'cant_miss', conceptId: 'stemi-recognition', presentation: 'atypical',
     stem: '58 F, diabetic, with nausea, breathlessness and profound fatigue but no chest pain. Which diagnosis must you actively exclude before calling this a viral illness?',
     vitals: [v('HR', '58', true), v('BP', '104/70'), v('SpO₂', '95% RA')],
     findings: ['Diaphoretic and grey. ECG not yet done.'],
@@ -626,7 +711,7 @@ const RAW: RawItem[] = [
     ],
     discriminator: 'Anaphylaxis is intramuscular epinephrine, first and without hesitation — antihistamines and steroids are adjuncts that treat neither the airway nor the shock.',
     teachingPoint: 'IM into the anterolateral thigh; repeat every 5–15 minutes as needed before reaching for IV access.',
-    tags: { system: 'infectious', complaint: 'shock', rotation: ['em', 'im', 'peds'], level: 'both', boards: ['step1', 'step2', 'step3'] },
+    tags: { system: 'multisystem', complaint: 'shock', rotation: ['em', 'im', 'peds'], level: 'both', boards: ['step1', 'step2', 'step3'] },
     difficultySeed: 0.8,
     source: [{ ref: 'WAO Anaphylaxis Guidance', year: 2020 }],
   },
@@ -1080,8 +1165,43 @@ const RAW: RawItem[] = [
   },
 ];
 
-/** The full bank, board tags normalised. */
+/** The full bank of vignettes, normalised. */
 export const ITEMS: Item[] = RAW.map(normalizeItem);
+
+/**
+ * Enrich a raw concept with taxonomy placement and fields derived
+ * from its vignettes. Migrated content is marked UNREVIEWED until a
+ * physician signs off — every concept cites real sources on its
+ * vignettes, but none has yet had clinical review.
+ */
+function enrichConcept(raw: RawConcept, items: Item[]): Concept {
+  const own = items.filter((i) => i.conceptId === raw.conceptId);
+  const rotations = [...new Set(own.flatMap((i) => i.tags.rotation))].sort();
+  const levels = new Set<'preclinical' | 'clerkship'>();
+  for (const i of own) {
+    if (i.tags.level === 'preclinical' || i.tags.level === 'both') levels.add('preclinical');
+    if (i.tags.level === 'clerkship' || i.tags.level === 'both') levels.add('clerkship');
+  }
+  const subtopicId = CONCEPT_SUBTOPIC[raw.conceptId] ?? `${raw.system}.UNMAPPED`;
+  const sub = subtopicById(subtopicId);
+  return {
+    conceptId: raw.conceptId,
+    name: raw.name,
+    system: raw.system,
+    topic: raw.topic,
+    subtopic: subtopicId,
+    alsoTaggedSystems: raw.alsoTaggedSystems ?? CONCEPT_ALSO_SYSTEMS[raw.conceptId] ?? [],
+    rotations,
+    level: [...levels],
+    usmleOutlineRefs: sub?.usmleOutlineRefs ?? [],
+    illnessScript: raw.illnessScript,
+    reviewedBy: raw.reviewedBy ?? UNREVIEWED,
+    reviewedOn: raw.reviewedOn ?? null,
+  };
+}
+
+/** The full concept set, enriched with taxonomy and derived tags. */
+export const CONCEPTS: Concept[] = RAW_CONCEPTS.map((c) => enrichConcept(c, ITEMS));
 
 /** Rotation and course focus definitions (mirrors the mockup). */
 export interface FocusOption {

@@ -37,9 +37,35 @@ export type System =
   | 'heme_onc'
   | 'infectious'
   | 'msk_rheum'
-  | 'reproductive';
+  | 'reproductive'
+  | 'dermatology'
+  | 'psychiatry'
+  | 'multisystem'   // cross-cutting: shock, tox, allergy, preventive
+  | 'pediatrics';   // cross-cutting
 
 export type Level = 'preclinical' | 'clerkship' | 'both';
+
+/**
+ * One way a concept can present. A vignette carries exactly one.
+ * `mimic` — looks like this concept but the answer is a distractor —
+ * is the highest-value and easiest-to-forget type.
+ */
+export type PresentationType =
+  | 'classic'
+  | 'atypical'
+  | 'early'
+  | 'elderly'
+  | 'masked'
+  | 'severe'
+  | 'mimic';
+
+/**
+ * Sentinel for concepts that have not yet had physician review.
+ * LLM-drafted clinical content is plausible-but-sometimes-wrong; the
+ * build warns while this is set and no such content should reach a
+ * learner as validated.
+ */
+export const UNREVIEWED = 'UNREVIEWED';
 
 export interface Vital {
   /** short label, e.g. "HR" */
@@ -119,14 +145,60 @@ export interface Item {
    */
   difficultySeed: number;
   source: { ref: string; year: number }[];
+
+  /* ── enriched by normalization (see content/bank.ts) ── */
+  /** ONE way the concept presents. Defaults to 'classic' when unset. */
+  presentation: PresentationType;
+  /**
+   * Distractors as concept references, when available. Every id here
+   * must resolve to a real concept — checked at build time. Prose
+   * options in `options` remain the rendered source of truth.
+   */
+  distractorConceptIds?: string[];
+  /** observed exposures, from session history (0 until telemetry runs) */
+  exposures: number;
+  /** observed p(correct); null until enough exposures (n ≥ 30) */
+  pCorrect: number | null;
+  /** provenance — the original itemId, so no learner state is orphaned */
+  legacyItemId?: string;
 }
 
+/**
+ * A diagnosis or management decision. The unit of mastery,
+ * scheduling, and coverage. `conceptId` is a PERMANENT join key.
+ */
 export interface Concept {
   conceptId: string;
   name: string;
   system: System;
   /** short mastery-topic label, e.g. "Acute chest pain" */
   topic: string;
+
+  /* ── enriched by normalization (see content/bank.ts) ── */
+  /** taxonomy subtopic id, e.g. "pulm.vte" — must resolve in taxonomy.ts */
+  subtopic: string;
+  /** additional systems this concept legitimately belongs to (PE is also CV) */
+  alsoTaggedSystems: System[];
+  /** rotations this concept appears on, unioned from its vignettes */
+  rotations: string[];
+  /** training levels — many, not one */
+  level: ('preclinical' | 'clerkship')[];
+  /** public USMLE Content Outline references */
+  usmleOutlineRefs: string[];
+  /** structured teaching payload; optional until authored */
+  illnessScript?: IllnessScript;
+  /** physician who signed off, or the UNREVIEWED sentinel */
+  reviewedBy: string;
+  /** ISO date of review, or null while UNREVIEWED */
+  reviewedOn: string | null;
+}
+
+export interface IllnessScript {
+  epidemiology: string;
+  timeCourse: string;
+  keyFindings: string[];
+  /** concepts this is classically confused with — conceptIds */
+  classicDistractors: string[];
 }
 
 /* ── learner state ─────────────────────────────────────────── */
