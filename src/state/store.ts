@@ -23,6 +23,7 @@ export function defaultSettings(mode: 'course' | 'rotation'): Settings {
 export function defaultState(): AppState {
   return {
     version: STATE_VERSION,
+    updatedAt: new Date().toISOString(),
     focus: { mode: 'rotation', id: 'im', mixPercent: 75, boards: 'all', subtopics: [] },
     settings: defaultSettings('rotation'),
     schedules: {},
@@ -41,8 +42,13 @@ export function loadState(storage: Pick<Storage, 'getItem'> = localStorage): App
     if (parsed.version !== STATE_VERSION) return defaultState();
     const base = defaultState();
     // deep-merge focus so a payload from before board scoping still
-    // gets a valid `boards` default
-    return { ...base, ...parsed, focus: { ...base.focus, ...parsed.focus } };
+    // gets a valid `boards` default; keep the stored updatedAt if present
+    return {
+      ...base,
+      ...parsed,
+      updatedAt: parsed.updatedAt ?? base.updatedAt,
+      focus: { ...base.focus, ...parsed.focus },
+    };
   } catch {
     return defaultState();
   }

@@ -181,8 +181,11 @@ function pick(pool: Candidate[], n: number, rng: () => number, recency: Map<stri
     .map((c) => ({
       c,
       key:
-        (c.due ? 0 : 1000) + // due concepts always outrank not-due
-        Math.min(c.dueIn, 365) + // sooner-due first among the not-due
+        // three-tier priority so BRAND-NEW concepts surface on load and
+        // aren't buried behind every pending review (the coverage push):
+        //   due review (0) < never-seen (300) < seen-but-not-due (1000)
+        (c.due ? 0 : !c.seen ? 300 : 1000) +
+        (c.due ? Math.min(c.dueIn, 365) : 0) + // sooner-due first among reviews
         (100 - c.weakness) * 0.5 + // weaker topics first
         stalenessPenalty(c, recency), // recently-seen concepts sink
     }))

@@ -22,9 +22,12 @@ npm run build      # type-check + production bundle (dist/)
 npm run test:e2e   # all three games, headless Chromium (after build)
 ```
 
-No backend. The app is a static bundle; learner state lives in
-`localStorage` (guest-first — accounts and sync attach to the same JSON
-payload later).
+**Local-first.** The app is a static bundle; learner state lives in
+`localStorage` and works fully offline as a guest. Accounts and cloud sync are
+an *optional layer* on top of the same JSON payload — built and unit-tested
+here, activated by pointing `VITE_SYNC_URL` at a backend (see
+[docs/SYNC_AND_IOS.md](docs/SYNC_AND_IOS.md)). The design map and the phased
+road to an App Store build are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## The mini-games
 
@@ -87,6 +90,21 @@ differ (`src/content/games.ts`).
 - **Practicalities** — offline-first app shell (service worker), real dark mode
   (green monitor trace for the ECG game), one-handed layout with primary
   actions in the bottom third, fast cold start.
+- **Accounts & sync (layered, optional)** — guest-first: everyone starts as a
+  guest with local-only progress, can become a named local profile, or sign in
+  to a cloud account that syncs. Sync is **progress-preserving** — a first
+  sign-in folds guest progress into the account, two offline devices reconcile
+  without losing work, and points are **recomputed from merged sessions** so a
+  shared session is never double-counted (`src/sync/merge.ts`, unit-tested). The
+  backend is reached through one tiny provider-agnostic port (`src/sync/`), so
+  Supabase, a Worker, or any two-endpoint server satisfies it; with no backend
+  configured the app is cleanly guest/local-only. A **Profile** screen carries
+  the hero stats, local-profile and cloud sign-in flows, sync status, sign-out,
+  and JSON export/import (backup + account migration).
+- **iOS (Capacitor)** — `capacitor.config.ts` + `ios:add`/`ios:sync`/`ios:open`
+  scripts wrap the exact same web build as a native iOS shell for the App Store;
+  the PWA ships in parallel. Steps (Mac-only) in
+  [docs/SYNC_AND_IOS.md](docs/SYNC_AND_IOS.md).
 
 ## Content model, taxonomy & validation
 
@@ -143,7 +161,7 @@ Two mechanisms:
   (asserted by a 25-session simulation test). Selection is a weighted sample
   from the top-ranked window, not a strict argmax, so sets don't feel identical.
 
-Adding more presentations per concept is the ongoing content lever: 26 of 147
+Adding more presentations per concept is the ongoing content lever: 26 of 210
 concepts currently have ≥2 vignettes.
 
 ## Architecture
@@ -163,9 +181,16 @@ src/
     scoring.ts        base points + speed bonus (bonus-only timer)
     streak.ts         daily goal, streak, weekly repair
   state/store.ts      localStorage persistence + atomic session commit
+  sync/               optional cloud layer, no DOM, unit-tested
+    account.ts        guest → local → cloud account model
+    merge.ts          progress-preserving state merge (no double-count)
+    engine.ts         pull/push reconciliation, debounced
+    backend.ts        SyncBackend port + in-memory adapter
+    rest.ts           REST adapter (GET/PUT /state, Bearer auth)
   ui/
-    app.ts            screen registry, navigation, tab bar
+    app.ts            screen registry, navigation, tab bar, sync wiring
     drill.ts          the one screen every game runs on
+    profile.ts        accounts, sign-in, sync status, export/import
     ecgRenderer.ts    parametric rhythm-strip renderer
     today/focus/summary/progress.ts
   content/validation.ts  (build gate; imported by scripts + tests, not the app)
@@ -192,6 +217,9 @@ explicitly per item.
 
 ## Deliberately not here
 
-Accounts/sync (the state payload is designed for it), the V2 case-presentation
-coach, class codes, and the mascot. Also deliberately never: hearts/lives,
-virtual currency, public leaderboards, guilt notifications.
+The V2 case-presentation coach, class codes, and the mascot. A running sync
+backend and the Xcode build are external by design (a Mac + a hosted service —
+[docs/SYNC_AND_IOS.md](docs/SYNC_AND_IOS.md)), not missing code. Also
+deliberately *never*: hearts/lives, virtual currency, pay-to-progress, public
+leaderboards, guilt notifications — see the gamification guardrails in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

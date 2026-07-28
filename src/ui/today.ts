@@ -56,6 +56,17 @@ export function renderToday(ctx: Ctx): HTMLElement {
 
   const scroll = root.querySelector('.scroll')!;
 
+  // ── guest → sign-in nudge (once there's progress worth keeping) ──
+  if (ctx.account.kind === 'guest' && state.sessions.length >= 1) {
+    const gb = el(`<button class="guestbar" type="button">
+      <span class="gb-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+      <span class="gb-tx"><b>Save your progress</b><span>Create a profile so your points and memory aren't lost</span></span>
+      ${CHEVRON}
+    </button>`);
+    gb.addEventListener('click', () => ctx.go('profile'));
+    scroll.appendChild(gb);
+  }
+
   // ── focus bar ──
   const subN = state.focus.subtopics.length;
   const scopeLine =

@@ -13,6 +13,7 @@ import { TREATMENT_TYPES } from '../types';
 import { CONCEPTS, ITEMS, conceptById } from '../content/bank';
 import { gameById, type GameDef } from '../content/games';
 import { buildSet } from '../engine/session';
+import { shuffleOptions } from '../engine/shuffle';
 import { pointsFor } from '../engine/scoring';
 import { commitSession } from '../state/store';
 import { el, esc, fmtSeconds } from './dom';
@@ -176,12 +177,8 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     body.appendChild(promptBlock(item));
 
     // authored order always lists the answer first — shuffle for display
-    // so "A" never becomes the tell
-    displayOptions = [...item.options];
-    for (let i = displayOptions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [displayOptions[i], displayOptions[j]] = [displayOptions[j], displayOptions[i]];
-    }
+    // so "A" never becomes the tell (correctness is by option id, not position)
+    displayOptions = shuffleOptions(item.options);
 
     const opts = el('<div class="opts" id="opts"></div>');
     displayOptions.forEach((o, i) => {

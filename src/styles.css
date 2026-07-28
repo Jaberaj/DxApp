@@ -321,4 +321,33 @@ input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:4px;
 .assoc-lab{color:var(--plum);display:block;margin-bottom:9px}
 .assoc-prompt{margin:0;font-family:'Archivo',sans-serif;font-weight:600;font-size:20px;line-height:1.32;color:var(--ink);letter-spacing:-.01em}
 
+/* ── profile / account ─────────────────────────────────────── */
+.profile-hero{display:flex;align-items:center;gap:13px}
+.avatar{width:52px;height:52px;flex:0 0 52px;border-radius:50%;display:grid;place-items:center;background:var(--depth);color:#fff;font-family:'Archivo',sans-serif;font-weight:700;font-size:19px;letter-spacing:.02em}
+.profile-hero .who{min-width:0}
+.profile-hero .who b{display:block;font-family:'Archivo',sans-serif;font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.profile-hero .who span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.name-row{display:flex;gap:8px;margin-top:11px}
+.name-input{flex:1;min-width:0;font-family:'Source Sans 3',sans-serif;font-size:15px;padding:11px 13px;border-radius:11px;border:1px solid var(--rule);background:var(--sunk);color:var(--ink)}
+.name-input:focus-visible{outline:2px solid var(--depth);outline-offset:1px}
+.signin-col{display:flex;flex-direction:column;gap:9px;margin-top:11px}
+.btn.signin{display:flex;align-items:center;justify-content:center;gap:9px}
+.btn.signin.apple{background:var(--ink);box-shadow:0 2px 0 #000}
+.btn.signin.google{background:var(--card);color:var(--ink);border:1px solid var(--rule-2);box-shadow:0 2px 0 var(--rule)}
+.btn.signin[disabled]{opacity:.5}
+.btn.import-label{text-align:center;cursor:pointer}
+.cloud-note{margin-top:11px}
+.sync-row{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink-2)}
+.sync-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);flex:0 0 9px}
+.sync-dot.synced{background:var(--pulse)} .sync-dot.syncing{background:var(--brass)} .sync-dot.error{background:var(--alarm)} .sync-dot.offline{background:var(--clay)}
+.profile-legal{font-size:12px;line-height:1.5;color:var(--ink-3);margin:16px 2px 0}
+
+/* ── guest banner (Today) ──────────────────────────────────── */
+.guestbar{display:flex;align-items:center;gap:11px;width:100%;cursor:pointer;text-align:left;background:var(--depth-l);border:1px solid var(--rule);border-radius:13px;padding:11px 13px;font-family:inherit;color:var(--depth-d);margin-bottom:2px}
+.guestbar:focus-visible{outline:2px solid var(--depth);outline-offset:2px}
+.guestbar .gb-ic{flex:0 0 auto;display:grid;place-items:center;color:var(--depth)}
+.guestbar b{font-family:'Source Sans 3',sans-serif;font-size:13.5px;font-weight:700;color:var(--depth-d)}
+.guestbar span{display:block;font-size:12px;color:var(--depth-d);opacity:.85}
+@media (prefers-color-scheme: dark){.guestbar{color:var(--ink)}.guestbar b,.guestbar span{color:var(--ink)}}
+
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}}

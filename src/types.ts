@@ -302,6 +302,8 @@ export interface SessionRecord {
 
 export interface AppState {
   version: number;
+  /** ISO timestamp of the last local mutation — used for sync merge */
+  updatedAt: string;
   focus: FocusState;
   settings: Settings;
   schedules: Record<string, ConceptSchedule>;
@@ -310,3 +312,26 @@ export interface AppState {
   sessions: SessionRecord[];
   totalPoints: number;
 }
+
+/* ── account & sync ────────────────────────────────────────── */
+
+export type AuthProvider = 'apple' | 'google' | 'email';
+
+/**
+ * Who the learner is. Guest-first: everyone starts as a guest with
+ * local-only progress. Signing in converts that guest state into an
+ * account whose progress syncs. `local` is an offline profile with a
+ * name but no cloud (identity + export/import, no backend).
+ */
+export interface Account {
+  kind: 'guest' | 'local' | 'cloud';
+  /** stable id (guest: device id; cloud: backend user id) */
+  id: string;
+  displayName?: string;
+  email?: string;
+  provider?: AuthProvider;
+  /** bearer token for the sync backend, when cloud */
+  token?: string;
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'offline' | 'error' | 'disabled';

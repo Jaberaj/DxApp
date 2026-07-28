@@ -188,6 +188,59 @@ describe('session builder — repeat suppression', () => {
   });
 });
 
+describe('session builder — new vs review (coverage push)', () => {
+  function mulberry(seed: number): () => number {
+    let s = seed >>> 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const asResults = (set: Item[]): SessionItemResult[] =>
+    set.map((it) => ({ itemId: it.itemId, conceptId: it.conceptId, correct: true, elapsedMs: 1, chosen: [], timedOut: false, points: 30 }));
+
+  it('a brand-new learner is served only unseen concepts', () => {
+    const state = { ...defaultState(), focus: { mode: 'course' as const, id: 'neuro', mixPercent: 100, boards: 'all' as const, subtopics: [] } };
+    const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), rng);
+    expect(set.length).toBeGreaterThan(0);
+    for (const item of set) expect(state.schedules[item.conceptId], item.itemId).toBeUndefined();
+  });
+
+  it('new concepts still surface when reviews are already pending', () => {
+    const state: AppState = { ...defaultState(), focus: { mode: 'course', id: 'neuro', mixPercent: 100, boards: 'all', subtopics: [] } };
+    // mark HALF of the neuro DDx concepts as seen (due) — leave the rest brand new
+    const neuroConcepts = CONCEPTS.filter((c) =>
+      ITEMS.some((i) => i.conceptId === c.conceptId && i.tags.system === 'neuro' && filterFor('rapid_ddx').types.includes(i.type)),
+    ).map((c) => c.conceptId);
+    const seen = neuroConcepts.slice(0, Math.floor(neuroConcepts.length / 2));
+    for (const id of seen) state.schedules[id] = newSchedule(id, new Date('2026-06-01T12:00:00Z'));
+    const unseen = new Set(neuroConcepts.filter((id) => !seen.includes(id)));
+
+    const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), rng);
+    const servedNew = set.filter((i) => unseen.has(i.conceptId)).length;
+    expect(servedNew, 'a fresh load should include new concepts, not only reviews').toBeGreaterThan(0);
+  });
+
+  it('over many sessions every concept in the pool is eventually seen (nothing starved)', () => {
+    let state: AppState = { ...defaultState(), focus: { mode: 'course', id: 'neuro', mixPercent: 100, boards: 'all', subtopics: [] } };
+    const pool = new Set(
+      CONCEPTS.filter((c) =>
+        ITEMS.some((i) => i.conceptId === c.conceptId && i.tags.system === 'neuro' && filterFor('rapid_ddx').types.includes(i.type)),
+      ).map((c) => c.conceptId),
+    );
+    const seen = new Set<string>();
+    for (let s = 0; s < 40; s++) {
+      const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), mulberry(s + 7));
+      for (const it of set) seen.add(it.conceptId);
+      state = commitSession(state, asResults(set), 'rapid_ddx', NOW, NOW).state;
+    }
+    const starved = [...pool].filter((id) => !seen.has(id));
+    expect(starved, `never served: ${starved.join(', ')}`).toHaveLength(0);
+  });
+});
+
 describe('session builder — focus scoping', () => {
   it('at 100% block, every item is on block for the focus', () => {
     const state: AppState = {
