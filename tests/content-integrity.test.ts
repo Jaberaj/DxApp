@@ -79,6 +79,15 @@ describe('content integrity — the gate rejects bad content', () => {
     expect(errors.some((e) => /question bank/i.test(e))).toBe(true);
   });
 
+  it('rejects every commercial board-prep brand as a source', () => {
+    const brands = ['Pathoma', 'Boards and Beyond', 'OnlineMedEd', 'First Aid for the USMLE', 'AMBOSS', 'Sketchy', 'Lecturio', 'USMLE Free 120'];
+    for (const ref of brands) {
+      const bad = { ...goodItem, source: [{ ref, year: 2023 }] };
+      const { errors } = validateBank([goodConcept], [bad]);
+      expect(errors.some((e) => /question bank/i.test(e)), ref).toBe(true);
+    }
+  });
+
   it('fails a dangling distractor concept reference', () => {
     const bad = { ...goodItem, distractorConceptIds: ['does.not.exist'] };
     const { errors } = validateBank([goodConcept], [bad]);

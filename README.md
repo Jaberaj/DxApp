@@ -104,21 +104,26 @@ IDs are permanent join keys for mastery, scheduling, and coverage.
 - **Build-time validation** (`src/content/validation.ts`, Zod) — runs as a
   `prebuild` gate, so `npm run build` **fails** on malformed content, a dangling
   distractor/concept reference, a concept placed outside the taxonomy or in the
-  wrong system, or a source that cites a **commercial question bank**. Reputable
-  primary sources only (guidelines, standard references); no NBME/UWorld/AMBOSS/
-  Kaplan material anywhere.
+  wrong system, or a source that cites a **commercial board-prep brand**
+  (UWorld, AMBOSS, First Aid, Pathoma, Boards & Beyond, Sketchy, OnlineMedEd,
+  NBME/Free 120). Those are **coverage-only** — usable to know which topics
+  exist, never copied, scraped, or cited. Every vignette cites a **public**
+  clinical-evidence source (agency, society guideline, USPSTF, peer-reviewed
+  literature). Full policy in [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md).
 - **Review discipline** — every concept carries `reviewedBy`/`reviewedOn`.
   LLM-drafted clinical content is plausible-but-sometimes-wrong, so all migrated
   content is marked `UNREVIEWED`; the build *warns* on it and it must not reach a
   learner as validated until a physician signs off.
 
-Current bank: **181 vignettes / 147 concepts / 64 of 108 subtopics**, spanning
-cardiology, pulmonary, renal & GU, neurology, GI & hepatobiliary, endocrine,
-MSK & rheumatology, heme/onc, ID, toxicology, psychiatry, dermatology and
-OB/GYN — all `UNREVIEWED`, every vignette sourced. See
-[MIGRATION_REPORT.md](MIGRATION_REPORT.md) for the live coverage map and the
-44 remaining empty subtopics. Difficulty seeds are author guesses, to be
-overwritten by observed p(correct) once telemetry runs.
+Current bank: **244 vignettes / 210 concepts / 108 of 108 subtopics** — every
+taxonomy subtopic across all 14 systems now has content (Pediatrics,
+Psychiatry, Reproductive, Preventive/biostat, Genetics and the rest included).
+All `UNREVIEWED`, every vignette cites a public source. A test asserts full
+subtopic coverage so a new taxonomy row can't ship empty. See
+[MIGRATION_REPORT.md](MIGRATION_REPORT.md) for the live map. Depth is the
+ongoing lever — breadth (every topic present) is done; density (more
+presentations per concept) continues. Difficulty seeds are author guesses, to
+be overwritten by observed p(correct) once telemetry runs.
 
 ### Presentation variance & repeat suppression
 

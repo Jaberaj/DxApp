@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SUBTOPICS, SUBTOPIC_IDS, TAXONOMY, subtopicById } from '../src/content/taxonomy';
+import { CONCEPTS } from '../src/content/bank';
 
 describe('taxonomy', () => {
   it('covers all 12 organ systems plus 2 cross-cutting', () => {
@@ -27,5 +28,11 @@ describe('taxonomy', () => {
     for (const s of SUBTOPICS) {
       expect(s.usmleOutlineRefs.length, s.id).toBeGreaterThan(0);
     }
+  });
+
+  it('every subtopic has at least one concept (full coverage)', () => {
+    const covered = new Set(CONCEPTS.map((c) => c.subtopic));
+    const empty = SUBTOPICS.filter((s) => !covered.has(s.id)).map((s) => s.id);
+    expect(empty, `empty subtopics: ${empty.join(', ')}`).toHaveLength(0);
   });
 });

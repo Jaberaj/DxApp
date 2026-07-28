@@ -5,35 +5,24 @@ and reports coverage against the taxonomy.*
 
 ## Census
 
-- Vignettes (items) in: **181**
-- Concepts out: **147**
+- Vignettes (items) in: **244**
+- Concepts out: **210**
 - Vignettes missing `legacyItemId` (orphan risk): **0**
 - Concepts not placed in the taxonomy: **0**
-- Concepts UNREVIEWED (pending physician sign-off): **147/147**
+- Concepts UNREVIEWED (pending physician sign-off): **210/210**
 
 ## Board-level distribution (vignettes; may serve several)
 
-- Step 1: 123 · Step 2 CK: 175 · Step 3: 140
+- Step 1: 161 · Step 2 CK: 235 · Step 3: 191
 
 ## Taxonomy coverage
 
 - Subtopics defined: **108** across 14 systems
-- Subtopics with ≥1 concept: **64**
-- Empty subtopics (visible gaps to fill): **44**
+- Subtopics with ≥1 concept: **108**
+- Empty subtopics (visible gaps to fill): **0**
 
 ### Empty subtopics by system
 
-- **Cardiovascular**: cv.htn-lipids
-- **Pulmonary**: pulm.parenchyma, pulm.critical, pulm.neoplasm, pulm.vascular
-- **GI & Hepatobiliary**: gi.infectious, gi.neoplasm
-- **Endocrine**: endo.repro-endo, endo.lipid-metab
-- **Heme & Onc**: heme.hemostasis, onc.solid, heme.transfusion
-- **Infectious Disease**: id.sepsis, id.gi-id, id.uti-id, id.cns-id, id.skin-soft
-- **Dermatology**: derm.inflammatory, derm.systemic, derm.hypersensitivity
-- **Psychiatry**: psych.anxiety, psych.psychotic, psych.neurocognitive, psych.somatic-personality, psych.child-psych, psych.eating
-- **Reproductive**: repro.gyn-onc, repro.breast, repro.infertility, repro.sti, repro.contraception
-- **Multisystem & Critical Care**: multi.shock, multi.acid-base-fluids, multi.nutrition-vitamin, multi.geriatrics, multi.preventive, multi.genetics
-- **Pediatrics**: peds.neonatal, peds.development, peds.peds-infectious, peds.peds-respiratory, peds.congenital-genetic, peds.peds-gi, peds.vaccines
 
 ## Validation
 

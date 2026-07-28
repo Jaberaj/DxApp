@@ -20,11 +20,12 @@ import { subtopicById } from './taxonomy';
 import { v, type ContentModule, type RawConcept, type RawItem } from './authoring';
 import { EXPANSION } from './expansion';
 import { EXPANSION2 } from './expansion2';
+import { EXPANSION3 } from './expansion3';
 
 export { v };
 
 /** Content modules merged on top of the base bank, in order. */
-const MODULES: ContentModule[] = [EXPANSION, EXPANSION2];
+const MODULES: ContentModule[] = [EXPANSION, EXPANSION2, EXPANSION3];
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
   if (raw.tags.boards) return raw.tags.boards;

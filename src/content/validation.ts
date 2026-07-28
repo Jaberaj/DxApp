@@ -18,7 +18,13 @@ import type { Concept, Item } from '../types';
 import { SUBTOPIC_IDS, subtopicById } from './taxonomy';
 import { UNREVIEWED } from '../types';
 
-/** Commercial question banks / copyrighted item sources — never cite these. */
+/**
+ * Commercial board-prep / question-bank brands. These are COVERAGE-ONLY:
+ * they may inform which topics exist, but must never be copied, scraped,
+ * or cited as a factual source. A citation matching any of these fails
+ * the build. Cite public primary sources instead (guidelines, agencies,
+ * peer-reviewed literature). See docs/CONTENT_POLICY.md.
+ */
 const SOURCE_DENYLIST = [
   /uworld/i,
   /\bamboss\b/i,
@@ -26,6 +32,12 @@ const SOURCE_DENYLIST = [
   /usmle[-\s]?rx/i,
   /\bkaplan\b/i,
   /sketchy/i,
+  /pathoma/i,
+  /boards?\s*(and|&)\s*beyond/i,
+  /onlinemeded/i,
+  /first\s*aid\s+for\s+the\s+usmle/i,
+  /free[-\s]?120/i,
+  /lecturio/i,
   /\bpixorize\b/i,
   /question\s*bank/i,
   /\bqbank\b/i,
