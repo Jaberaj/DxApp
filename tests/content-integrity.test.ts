@@ -26,10 +26,17 @@ describe('content integrity — the live bank', () => {
     for (const it of ITEMS) expect(ids.has(it.conceptId), it.itemId).toBe(true);
   });
 
-  it('flags the migrated bank as UNREVIEWED without failing the build', () => {
-    const { warnings, stats } = validateBank(CONCEPTS, ITEMS);
-    expect(stats.unreviewed).toBe(CONCEPTS.length);
-    expect(warnings.some((w) => /UNREVIEWED/.test(w))).toBe(true);
+  it('flags the bank as not-yet-validated without failing the build', () => {
+    const { warnings, errors, stats } = validateBank(CONCEPTS, ITEMS);
+    // nothing is validated yet — a single-family seed pass is not enough
+    expect(stats.reviewStatus.validated).toBe(0);
+    expect(stats.reviewStatus.flagged).toBe(0);
+    // most concepts are unreviewed, some are in review from the seed pass
+    expect(stats.unreviewed + stats.reviewStatus.in_review).toBe(CONCEPTS.length);
+    expect(stats.reviewStatus.in_review).toBeGreaterThanOrEqual(12);
+    expect(warnings.some((w) => /not yet validated/.test(w))).toBe(true);
+    // drafts are warnings, never build-failing errors
+    expect(errors).toHaveLength(0);
   });
 });
 
@@ -48,6 +55,7 @@ const goodConcept: Concept = {
   usmleOutlineRefs: ['ref'],
   reviewedBy: 'Dr Test',
   reviewedOn: '2026-01-01',
+  reviews: [],
 };
 
 const goodItem: Item = {

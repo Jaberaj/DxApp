@@ -14,9 +14,10 @@
    ══════════════════════════════════════════════════════════════ */
 
 import { z } from 'zod';
-import type { Concept, Item } from '../types';
+import type { Concept, Item, ReviewStatus } from '../types';
 import { SUBTOPIC_IDS, subtopicById } from './taxonomy';
 import { UNREVIEWED } from '../types';
+import { reviewStatusOf } from './review';
 
 /**
  * Commercial board-prep / question-bank brands. These are COVERAGE-ONLY:
@@ -49,6 +50,16 @@ const presentation = z.enum(['classic', 'atypical', 'early', 'elderly', 'masked'
 const sourceSchema = z.object({
   ref: z.string().min(4),
   year: z.number().int().gte(1990).lte(2100),
+});
+
+const reviewSchema = z.object({
+  reviewer: z.string().min(1),
+  kind: z.enum(['llm', 'human']),
+  family: z.string().min(1).optional(),
+  sources: z.array(sourceSchema),
+  verdict: z.enum(['pass', 'flag', 'fail']),
+  notes: z.string().min(1).optional(),
+  checkedOn: z.string().min(4),
 });
 
 const optionSchema = z.object({
@@ -111,6 +122,7 @@ const conceptSchema = z.object({
     .optional(),
   reviewedBy: z.string().min(1),
   reviewedOn: z.string().nullable(),
+  reviews: z.array(reviewSchema),
 });
 
 export interface ValidationReport {
@@ -122,7 +134,14 @@ export interface ValidationReport {
     unreviewed: number;
     withIllnessScript: number;
     subtopicsCovered: number;
+    /** concepts by DERIVED review status (see content/review.ts) */
+    reviewStatus: Record<ReviewStatus, number>;
   };
+}
+
+/** A citation matches a denylisted commercial brand. */
+function citesQuestionBank(ref: string): boolean {
+  return SOURCE_DENYLIST.some((banned) => banned.test(ref));
 }
 
 export function validateBank(concepts: Concept[], items: Item[]): ValidationReport {
@@ -180,10 +199,8 @@ export function validateBank(concepts: Concept[], items: Item[]): ValidationRepo
     }
     // source integrity — reputable sources only
     for (const s of it.source) {
-      for (const banned of SOURCE_DENYLIST) {
-        if (banned.test(s.ref)) {
-          errors.push(`item ${it.itemId}: source cites a question bank ("${s.ref}") — reputable primary sources only`);
-        }
+      if (citesQuestionBank(s.ref)) {
+        errors.push(`item ${it.itemId}: source cites a question bank ("${s.ref}") — reputable primary sources only`);
       }
     }
   }
@@ -194,11 +211,42 @@ export function validateBank(concepts: Concept[], items: Item[]): ValidationRepo
     if (!withItems.has(c.conceptId)) warnings.push(`concept ${c.conceptId}: no vignettes yet`);
   }
 
-  // ── review status ──
-  const unreviewed = concepts.filter((c) => c.reviewedBy === UNREVIEWED);
-  if (unreviewed.length > 0) {
+  // ── review pipeline: sources + derived status ──
+  const reviewStatus: Record<ReviewStatus, number> = {
+    unreviewed: 0,
+    in_review: 0,
+    validated: 0,
+    flagged: 0,
+  };
+  for (const c of concepts) {
+    // reviewers must also cite public sources — never a question bank
+    for (const r of c.reviews ?? []) {
+      for (const s of r.sources) {
+        if (citesQuestionBank(s.ref)) {
+          errors.push(`concept ${c.conceptId}: review by ${r.reviewer} cites a question bank ("${s.ref}") — public sources only`);
+        }
+      }
+      if ((r.verdict === 'flag' || r.verdict === 'fail') && !r.notes) {
+        errors.push(`concept ${c.conceptId}: review by ${r.reviewer} is a ${r.verdict} with no notes explaining what is wrong`);
+      }
+    }
+    reviewStatus[reviewStatusOf(c.reviews ?? [])]++;
+  }
+
+  // A flagged concept must not still claim a validated `reviewedBy` summary.
+  for (const c of concepts) {
+    if (reviewStatusOf(c.reviews ?? []) === 'flagged' && c.reviewedBy !== UNREVIEWED) {
+      errors.push(`concept ${c.conceptId}: has an open flag/fail but reviewedBy is "${c.reviewedBy}" — do not ship flagged content as reviewed`);
+    }
+  }
+
+  if (reviewStatus.flagged > 0) {
+    warnings.push(`${reviewStatus.flagged} concept(s) have an open flag/fail from a reviewer — resolve before shipping`);
+  }
+  const notValidated = concepts.length - reviewStatus.validated;
+  if (notValidated > 0) {
     warnings.push(
-      `${unreviewed.length}/${concepts.length} concepts are UNREVIEWED — drafts pending physician sign-off, do not ship as validated`,
+      `${notValidated}/${concepts.length} concepts are not yet validated (${reviewStatus.unreviewed} unreviewed, ${reviewStatus.in_review} in review) — drafts pending independent multi-reviewer sign-off, do not ship as validated`,
     );
   }
   const withScript = concepts.filter((c) => c.illnessScript).length;
@@ -209,9 +257,10 @@ export function validateBank(concepts: Concept[], items: Item[]): ValidationRepo
     stats: {
       concepts: concepts.length,
       items: items.length,
-      unreviewed: unreviewed.length,
+      unreviewed: reviewStatus.unreviewed,
       withIllnessScript: withScript,
       subtopicsCovered: new Set(concepts.map((c) => c.subtopic)).size,
+      reviewStatus,
     },
   };
 }

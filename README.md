@@ -128,20 +128,26 @@ IDs are permanent join keys for mastery, scheduling, and coverage.
   exist, never copied, scraped, or cited. Every vignette cites a **public**
   clinical-evidence source (agency, society guideline, USPSTF, peer-reviewed
   literature). Full policy in [docs/CONTENT_POLICY.md](docs/CONTENT_POLICY.md).
-- **Review discipline** — every concept carries `reviewedBy`/`reviewedOn`.
-  LLM-drafted clinical content is plausible-but-sometimes-wrong, so all migrated
-  content is marked `UNREVIEWED`; the build *warns* on it and it must not reach a
-  learner as validated until a physician signs off.
+- **Review discipline (multi-reviewer pipeline)** — LLM-drafted clinical
+  content is plausible-but-sometimes-wrong, so a concept isn't shown as
+  *validated* until it earns it. Review is a provider-agnostic pipeline: several
+  LLMs (ideally distinct model families) and later humans each check a concept
+  against public sources, and the status (`unreviewed`/`in_review`/`validated`/
+  `flagged`) is **derived** by a promotion rule requiring ≥2 **independent**
+  passing reviews. Reviewer citations pass the same commercial-source denylist.
+  The build reports the counts. Full process in [docs/REVIEW.md](docs/REVIEW.md);
+  run it with `npm run review`.
 
-Current bank: **244 vignettes / 210 concepts / 108 of 108 subtopics** — every
-taxonomy subtopic across all 14 systems now has content (Pediatrics,
-Psychiatry, Reproductive, Preventive/biostat, Genetics and the rest included).
-All `UNREVIEWED`, every vignette cites a public source. A test asserts full
-subtopic coverage so a new taxonomy row can't ship empty. See
-[MIGRATION_REPORT.md](MIGRATION_REPORT.md) for the live map. Depth is the
-ongoing lever — breadth (every topic present) is done; density (more
-presentations per concept) continues. Difficulty seeds are author guesses, to
-be overwritten by observed p(correct) once telemetry runs.
+Current bank: **256 vignettes / 210 concepts / 108 of 108 subtopics** — every
+taxonomy subtopic across all 14 systems has content (Pediatrics, Psychiatry,
+Reproductive, Preventive/biostat, Genetics and the rest included). Every
+vignette cites a public source; a test asserts full subtopic coverage so a new
+taxonomy row can't ship empty. See [MIGRATION_REPORT.md](MIGRATION_REPORT.md)
+for the live map. On review: a genuine single-reviewer first pass has moved 12
+concepts to `in_review`; none are `validated` yet (that needs a second
+independent model or a human — by design). Depth is the ongoing lever — breadth
+is done; density (more presentations per concept) continues. Difficulty seeds
+are author guesses, to be overwritten by observed p(correct) once telemetry runs.
 
 ### Presentation variance & repeat suppression
 
@@ -161,7 +167,7 @@ Two mechanisms:
   (asserted by a 25-session simulation test). Selection is a weighted sample
   from the top-ranked window, not a strict argmax, so sets don't feel identical.
 
-Adding more presentations per concept is the ongoing content lever: 26 of 210
+Adding more presentations per concept is the ongoing content lever: 38 of 210
 concepts currently have ≥2 vignettes.
 
 ## Architecture
@@ -170,9 +176,12 @@ concepts currently have ≥2 vignettes.
 src/
   types.ts            concept/vignette schema + learner-state types
   content/
-    bank.ts           concepts & vignettes; taxonomy + tags normalised on export
+    bank.ts           concepts & vignettes; taxonomy + reviews normalised on export
     taxonomy.ts       system → subtopic tree (coverage source of truth)
     validation.ts     Zod schemas + source-integrity checks (build gate)
+    review.ts         review-status promotion rule (derived, pure)
+    reviewPipeline.ts provider-agnostic multi-reviewer runner + rubric
+    reviews.ts        accrued reviewer verdicts, keyed by conceptId
     games.ts          the mini-game registry (id, item types, set size)
   engine/             pure logic, fully unit-tested, no DOM
     session.ts        set builder (game filter, board scope, mix, weakness)

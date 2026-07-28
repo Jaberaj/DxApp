@@ -112,17 +112,25 @@ reviewable and — critically — makes the content **splittable by module** whe
 we code-split (§6). Adding content is: append a concept + its item variants to a
 module, run `npm test`.
 
-**Review discipline.** LLM-drafted clinical content is plausible-but-
-sometimes-wrong. Everything ships flagged `UNREVIEWED`; the build warns on it;
-it must not be presented to a learner as *validated* until a physician (or a
-structured pass against trusted public sources) signs off via
-`reviewedBy`/`reviewedOn`. This is the single biggest correctness risk in the
-product and is tracked, not hidden.
+**Review discipline (a real pipeline, not a flag).** LLM-drafted clinical
+content is plausible-but-sometimes-wrong, so a concept is not *validated* until
+it earns it. Review is a **multi-reviewer validation pipeline**
+(`docs/REVIEW.md`): several LLMs — ideally distinct model families — and later
+humans each check a concept against public sources, and a concept is promoted to
+`validated` only with enough **independent** passing reviews (`content/review.ts`
+derives the status; `content/reviewPipeline.ts` is the provider-agnostic runner).
+Independence is the crux: two passes from the same model family share blind spots
+and count once. Reviewer citations pass the **same commercial-source denylist**
+as the content. This is the single biggest correctness risk in the product, and
+it is now measured (the build reports validated / in-review / unreviewed /
+flagged counts) rather than hidden.
 
-**Current state:** 210 concepts / 244 vignettes / 108-of-108 subtopics, all
-`UNREVIEWED`. Breadth (every topic present) is done. **Depth** — more
-presentations per concept — is the ongoing lever; 26 concepts currently carry
-≥2 vignettes, and that ratio is the metric to grow.
+**Current state:** 210 concepts / 256 vignettes / 108-of-108 subtopics. Breadth
+(every topic present) is done. **Depth** — more presentations per concept — is
+the ongoing lever; 38 concepts now carry ≥2 vignettes, and that ratio is the
+metric to grow. On review: a genuine single-reviewer first pass has moved 12
+concepts to `in_review`; none are `validated` yet, by design — that needs a
+second independent model or a human (run the pipeline with more providers).
 
 ---
 
@@ -224,8 +232,9 @@ add Sign in with Apple (Apple *requires* it alongside any other social login),
 sign, archive, submit. The PWA path (`Add to Home Screen`) is the zero-cost
 validation channel to use *before* investing in submission.
 
-**Phase D — Depth & polish.** Grow presentations-per-concept; run the physician/
-trusted-source review pass that lifts content out of `UNREVIEWED`; overwrite
+**Phase D — Depth & polish.** Grow presentations-per-concept; wire ≥2
+independent model families (and then humans) into the review pipeline
+(`docs/REVIEW.md`) to move content from `in_review` to `validated`; overwrite
 seed difficulties with observed p(correct) once telemetry exists; tune the
 gamification loop (§8) against real retention.
 
@@ -250,9 +259,11 @@ permanently.
 
 ## 9. Open questions / risk register
 
-- **Content correctness** is the top risk: `UNREVIEWED` at scale is a liability
-  until the review pass runs. Mitigated by the build warning + explicit flags,
-  but not resolved.
+- **Content correctness** is the top risk: unreviewed content at scale is a
+  liability until reviewers run. The multi-reviewer pipeline (`docs/REVIEW.md`)
+  and the measured status counts mitigate it, but it is only *resolved* concept
+  by concept as independent reviews land — wiring ≥2 real model families into
+  the runner is the highest-value next content task.
 - **Backend choice** (Phase B) is deferred by design — the port makes it a late,
   reversible decision. Supabase is the recommended default (Apple/Google auth +
   row-level security out of the box).

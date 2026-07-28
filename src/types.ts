@@ -81,6 +81,39 @@ export type PresentationType =
  */
 export const UNREVIEWED = 'UNREVIEWED';
 
+/**
+ * A single reviewer's verdict on a concept's clinical accuracy,
+ * checked against external PUBLIC sources. Review is done by several
+ * reviewers — multiple LLMs (ideally distinct model families, for
+ * independence) and, later, humans — and a concept is only promoted
+ * to `validated` when enough independent reviewers agree (see
+ * content/review.ts). Reviews accrue over time and are stored apart
+ * from the content itself (content/reviews.ts).
+ */
+export type ReviewVerdict = 'pass' | 'flag' | 'fail';
+
+export interface ReviewRecord {
+  /** model id ('claude-opus-4-8', 'gpt-5', …) or 'human:<name>' */
+  reviewer: string;
+  kind: 'llm' | 'human';
+  /**
+   * Model family for independence checks — two passes from the same
+   * family don't count as independent. Omit for humans.
+   * e.g. 'anthropic', 'openai', 'google'.
+   */
+  family?: string;
+  /** the PUBLIC sources this reviewer checked the claim against */
+  sources: { ref: string; year: number }[];
+  verdict: ReviewVerdict;
+  /** required for flag/fail: what is wrong, or exactly what was verified */
+  notes?: string;
+  /** ISO date */
+  checkedOn: string;
+}
+
+/** Derived promotion state of a concept — never stored, always computed. */
+export type ReviewStatus = 'unreviewed' | 'in_review' | 'validated' | 'flagged';
+
 export interface Vital {
   /** short label, e.g. "HR" */
   label: string;
@@ -205,6 +238,13 @@ export interface Concept {
   reviewedBy: string;
   /** ISO date of review, or null while UNREVIEWED */
   reviewedOn: string | null;
+  /**
+   * Accrued reviewer verdicts (merged from content/reviews.ts during
+   * normalization). The concept's promotion state is DERIVED from these
+   * via reviewStatus() — this array is the source of truth, not the
+   * `reviewedBy` summary above.
+   */
+  reviews: ReviewRecord[];
 }
 
 export interface IllnessScript {

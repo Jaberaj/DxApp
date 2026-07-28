@@ -22,18 +22,20 @@ their content into ours.
 ## Enforced at build time
 
 `npm run build` runs `npm run validate` first and **fails** if any vignette's
-`source` cites a coverage-only brand (regex denylist in `validation.ts`). It
-also fails on dangling references, malformed content, or a concept outside the
-taxonomy. Reputable primary sources only.
+`source` — **or any reviewer's citation** — cites a coverage-only brand (regex
+denylist in `validation.ts`). It also fails on dangling references, malformed
+content, or a concept outside the taxonomy. Reputable primary sources only.
 
 ## Review status
 
-LLM-drafted clinical content is plausible but sometimes subtly wrong. Every
-concept carries `reviewedBy` / `reviewedOn`; all current content is
-`UNREVIEWED` and the build **warns** on it. `UNREVIEWED` content must never be
-presented to a learner as validated. The intended review is a pass against the
-cited public source, marking each concept reviewed once its facts are confirmed
-against that source (not against any commercial product).
+LLM-drafted clinical content is plausible but sometimes subtly wrong, so a
+concept is not shown as *validated* until it earns that status through a
+**multi-reviewer pipeline** — several LLMs (distinct model families) and later
+humans, each checking the concept against public sources. Status
+(`unreviewed` / `in_review` / `validated` / `flagged`) is **derived** from the
+accrued reviews by the promotion rule, and the build reports the counts. The
+full process, rubric, and promotion rule are in **[REVIEW.md](REVIEW.md)**;
+reviewer citations are held to this same public-source policy.
 
 ## Web scraping
 

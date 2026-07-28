@@ -11,7 +11,12 @@ const { errors, warnings, stats } = validateBank(CONCEPTS, ITEMS);
 console.log(
   `content: ${stats.concepts} concepts, ${stats.items} vignettes, ` +
     `${stats.subtopicsCovered} subtopics covered, ` +
-    `${stats.unreviewed} UNREVIEWED, ${stats.withIllnessScript} with illness scripts`,
+    `${stats.withIllnessScript} with illness scripts`,
+);
+const rs = stats.reviewStatus;
+console.log(
+  `review:  ${rs.validated} validated, ${rs.in_review} in review, ` +
+    `${rs.unreviewed} unreviewed, ${rs.flagged} flagged`,
 );
 
 for (const w of warnings) console.warn(`  warn: ${w}`);

@@ -21,11 +21,13 @@ import { v, type ContentModule, type RawConcept, type RawItem } from './authorin
 import { EXPANSION } from './expansion';
 import { EXPANSION2 } from './expansion2';
 import { EXPANSION3 } from './expansion3';
+import { EXPANSION4 } from './expansion4';
+import { reviewsFor } from './reviews';
 
 export { v };
 
 /** Content modules merged on top of the base bank, in order. */
-const MODULES: ContentModule[] = [EXPANSION, EXPANSION2, EXPANSION3];
+const MODULES: ContentModule[] = [EXPANSION, EXPANSION2, EXPANSION3, EXPANSION4];
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
   if (raw.tags.boards) return raw.tags.boards;
@@ -1205,6 +1207,7 @@ function enrichConcept(raw: RawConcept, items: Item[]): Concept {
     illnessScript: raw.illnessScript,
     reviewedBy: raw.reviewedBy ?? UNREVIEWED,
     reviewedOn: raw.reviewedOn ?? null,
+    reviews: reviewsFor(raw.conceptId),
   };
 }
 
