@@ -25,12 +25,21 @@ import { EXPANSION4 } from './expansion4';
 import { GI_DEPTH } from './giDepth';
 import { RENAL_DEPTH } from './renalDepth';
 import { NEURO_DEPTH } from './neuroDepth';
+import { NEURO_DEPTH2 } from './neuroDepth2';
+import { RENAL_DEPTH2 } from './renalDepth2';
+import { CARDIO_DEPTH } from './cardioDepth';
+import { PULM_DEPTH } from './pulmDepth';
+import { HEME_DEPTH } from './hemeDepth';
 import { reviewsFor } from './reviews';
 
 export { v };
 
 /** Content modules merged on top of the base bank, in order. */
-const MODULES: ContentModule[] = [EXPANSION, EXPANSION2, EXPANSION3, EXPANSION4, GI_DEPTH, RENAL_DEPTH, NEURO_DEPTH];
+const MODULES: ContentModule[] = [
+  EXPANSION, EXPANSION2, EXPANSION3, EXPANSION4,
+  GI_DEPTH, RENAL_DEPTH, NEURO_DEPTH,
+  NEURO_DEPTH2, RENAL_DEPTH2, CARDIO_DEPTH, PULM_DEPTH, HEME_DEPTH,
+];
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
   if (raw.tags.boards) return raw.tags.boards;

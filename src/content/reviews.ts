@@ -404,3 +404,82 @@ record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-29', [
     notes: 'Verified: delayed dysarthria/dysphagia/spastic quadriparesis days after overrapid Na correction; the mechanistic basis of the ~6–8 mmol/L/24 h cap.',
   },
 ]);
+
+/* ── Heme variety pour: first-pass review of the new disease concepts ──
+   Same honesty rule: one reviewer of one family → in_review, never
+   validated. Each verdict checked against the concept's cited public
+   sources (ASH/ASCO/NCCN/IDSA/WHO and primary literature). */
+record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-29', [
+  {
+    conceptId: 'iron-deficiency-anemia', verdict: 'pass',
+    sources: [
+      { ref: 'Ko et al., ACG Clinical Guideline: GI Evaluation of Iron Deficiency Anemia', year: 2020 },
+      { ref: 'Camaschella, Iron-Deficiency Anemia (NEJM review)', year: 2015 },
+    ],
+    notes: 'Verified: microcytic, low ferritin/high TIBC; GI endoscopy mandatory in men/postmenopausal women; ferritin is the discriminator among microcytic anemias.',
+  },
+  {
+    conceptId: 'b12-folate-deficiency', verdict: 'pass',
+    sources: [{ ref: 'Stabler, Vitamin B12 Deficiency (NEJM review)', year: 2013 }],
+    notes: 'Verified: macrocytosis + hypersegmented PMNs; B12 raises MMA + causes neuro disease; folate raises only homocysteine; folate alone can mask B12 neuropathy. Single strong source.',
+  },
+  {
+    conceptId: 'thalassemia', verdict: 'pass',
+    sources: [{ ref: 'Taher et al., Thalassaemia (Lancet Seminar)', year: 2018 }],
+    notes: 'Verified: microcytosis with preserved/high RBC count, target cells, normal iron studies, elevated HbA2 in beta-thal; RBC count separates from iron deficiency. Single source.',
+  },
+  {
+    conceptId: 'sickle-cell', verdict: 'pass',
+    sources: [
+      { ref: 'Brandow et al., ASH Guidelines for Sickle Cell Disease: Management of Acute and Chronic Pain', year: 2020 },
+      { ref: 'NHLBI Evidence-Based Management of Sickle Cell Disease: Expert Panel Report', year: 2014 },
+    ],
+    notes: 'Verified: VOC managed with analgesia/hydration/O2; acute chest syndrome (fever, hypoxia, new infiltrate) is the can’t-miss; hydroxyurea reduces crises.',
+  },
+  {
+    conceptId: 'hemolytic-anemia', verdict: 'pass',
+    sources: [{ ref: 'Barcellini, Immune Hemolysis: Diagnosis and Treatment of AIHA (review)', year: 2015 }],
+    notes: 'Verified: high LDH/indirect bili, low haptoglobin, high retic; warm (IgG, spherocytes, +DAT) vs cold agglutinin (IgM, Mycoplasma/EBV). Single review source.',
+  },
+  {
+    conceptId: 'itp', verdict: 'pass',
+    sources: [{ ref: 'Neunert et al., ASH Guidelines for Immune Thrombocytopenia', year: 2019 }],
+    notes: 'Verified: isolated thrombocytopenia, no schistocytes; steroids ± IVIG first-line; platelets only for life-threatening bleeding. Single guideline source.',
+  },
+  {
+    conceptId: 'hemophilia', verdict: 'pass',
+    sources: [{ ref: 'Srivastava et al., WFH Guidelines for the Management of Hemophilia', year: 2020 }],
+    notes: 'Verified: X-linked factor VIII/IX deficiency; isolated prolonged PTT that corrects on mixing; deep bleeding/hemarthroses; distinct from vWD. Single guideline source.',
+  },
+  {
+    conceptId: 'von-willebrand', verdict: 'pass',
+    sources: [{ ref: 'James et al., ASH/ISTH/NHF/WFH Guidelines on the Management of von Willebrand Disease', year: 2021 }],
+    notes: 'Verified: most common inherited bleeding disorder; mucocutaneous bleeding, abnormal platelet-function assay; desmopressin first-line for type 1. Single guideline source.',
+  },
+  {
+    conceptId: 'hit', verdict: 'pass',
+    sources: [{ ref: 'Cuker et al., ASH Guidelines for VTE: Heparin-Induced Thrombocytopenia', year: 2018 }],
+    notes: 'Verified: > 50% platelet fall days 5–10 with thrombosis; stop all heparin, start non-heparin anticoagulant; avoid platelets and warfarin monotherapy. Single guideline source.',
+  },
+  {
+    conceptId: 'multiple-myeloma', verdict: 'pass',
+    sources: [{ ref: 'Rajkumar et al., IMWG Updated Criteria for the Diagnosis of Multiple Myeloma (Lancet Oncol)', year: 2014 }],
+    notes: 'Verified: CRAB features, M-spike/Bence Jones, rouleaux; whole-body CT/MRI/PET preferred over bone scan (lytic lesions); distinct from MGUS. Single strong source.',
+  },
+  {
+    conceptId: 'polycythemia-vera', verdict: 'pass',
+    sources: [
+      { ref: 'Arber et al., WHO Classification of Myeloid Neoplasms and Acute Leukemia (Blood)', year: 2016 },
+      { ref: 'Marchioli et al., CYTO-PV (NEJM)', year: 2013 },
+    ],
+    notes: 'Verified: JAK2 with low EPO, aquagenic pruritus/erythromelalgia; phlebotomy + low-dose aspirin, cytoreduction for high risk; low EPO separates from secondary polycythemia.',
+  },
+  {
+    conceptId: 'acute-leukemia', verdict: 'pass',
+    sources: [
+      { ref: 'Arber et al., WHO Classification of Myeloid Neoplasms and Acute Leukemia (Blood)', year: 2016 },
+      { ref: 'Sanz et al., Management of APL — European LeukemiaNet (Blood)', year: 2019 },
+    ],
+    notes: 'Verified: pancytopenia + blasts; AML (Auer rods, adults) vs ALL (TdT+, children, CNS/testicular/mediastinal); APL t(15;17) → DIC needs urgent ATRA.',
+  },
+]);
