@@ -15,6 +15,7 @@ import { gameById, type GameDef } from '../content/games';
 import { buildSet } from '../engine/session';
 import { shuffleOptions } from '../engine/shuffle';
 import { pointsFor } from '../engine/scoring';
+import type { Achievement, Tier } from '../engine/progression';
 import { commitSession } from '../state/store';
 import { el, esc, fmtSeconds } from './dom';
 import { renderEcg } from './ecgRenderer';
@@ -26,6 +27,10 @@ export interface SummaryPayload {
   moves: { topic: string; before: number; after: number }[];
   repaired: boolean;
   points: number;
+  /** achievements unlocked by this set */
+  newAwards: Achievement[];
+  /** rank reached by this set, if any */
+  promotedTo: Tier | null;
 }
 
 const CLOSE_ICON =
@@ -321,6 +326,8 @@ export function renderDrill(ctx: Ctx): HTMLElement {
       moves: outcome.masteryMoves,
       repaired: outcome.streakUpdate.repaired,
       points: totalPoints(),
+      newAwards: outcome.newAwards,
+      promotedTo: outcome.promotedTo,
     };
     ctx.go('summary', summary);
   }

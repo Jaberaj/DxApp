@@ -13,6 +13,7 @@ import { currentLength, dateKey } from '../engine/streak';
 import { CONCEPTS, ITEMS, BOARD_LEVELS } from '../content/bank';
 import { GAMES } from '../content/games';
 import { inBlock } from '../engine/session';
+import { rankCard } from './awards';
 
 const PULSE_ICON =
   '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14L15 12h7"/></svg>';
@@ -55,6 +56,9 @@ export function renderToday(ctx: Ctx): HTMLElement {
   </div>`);
 
   const scroll = root.querySelector('.scroll')!;
+
+  // ── rank, points, and progress to the next tier ──
+  scroll.appendChild(rankCard(state, () => ctx.go('profile')));
 
   // ── guest → sign-in nudge (once there's progress worth keeping) ──
   if (ctx.account.kind === 'guest' && state.sessions.length >= 1) {

@@ -11,6 +11,7 @@ import { conceptById } from '../content/bank';
 import { decayedScore } from '../engine/mastery';
 import { el, esc } from './dom';
 import { ecgPath, flatSegment } from './ecg';
+import { newAwardsCard, promotionBanner } from './awards';
 
 export function renderSummary(ctx: Ctx): HTMLElement {
   const payload = ctx.payload as SummaryPayload | undefined;
@@ -20,7 +21,7 @@ export function renderSummary(ctx: Ctx): HTMLElement {
     return el('<div></div>');
   }
 
-  const { game, items, results, moves, repaired, points } = payload;
+  const { game, items, results, moves, repaired, points, newAwards, promotedTo } = payload;
   const n = results.length;
   const nCorrect = results.filter((r) => r.correct).length;
   const missIdx = results.map((r, i) => (r.correct ? -1 : i)).filter((i) => i >= 0);
@@ -33,6 +34,7 @@ export function renderSummary(ctx: Ctx): HTMLElement {
       <p class="lab">Set complete</p>
       <h2 class="big" style="margin:6px 0 0;font-size:34px">${nCorrect} of ${n}</h2>
       <p class="sub-line">${repaired ? 'Rough stretch — your streak has been patched for the day you missed.' : missIdx.length === 0 ? 'A clean strip. No flatlines.' : 'Every miss below is one read you now own.'}</p>
+      <div id="promo"></div>
 
       <div class="strip" style="margin-top:18px">
         <div class="strip-head"><b>The set, item by item</b><span class="strip-sub ${missIdx.length ? 'miss-count' : ''}">${
@@ -52,6 +54,7 @@ export function renderSummary(ctx: Ctx): HTMLElement {
         <div class="fig"><b>+${points}</b><span>Points</span></div>
       </div>
 
+      <div id="rewards"></div>
       <div id="moved"></div>
       <div id="missCard"></div>
       <div style="height:10px"></div>
@@ -61,6 +64,12 @@ export function renderSummary(ctx: Ctx): HTMLElement {
       <button class="btn quiet" type="button" id="home">Back to today</button>
     </div>
   </div>`);
+
+  // ── rewards: promotion + newly unlocked ──
+  const promo = promotionBanner(promotedTo);
+  if (promo) root.querySelector('#promo')!.appendChild(promo);
+  const unlocked = newAwardsCard(newAwards);
+  if (unlocked) root.querySelector('#rewards')!.appendChild(unlocked);
 
   // ── moved today ──
   const movedHost = root.querySelector('#moved')!;

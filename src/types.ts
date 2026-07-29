@@ -351,6 +351,14 @@ export interface AppState {
   streak: StreakState;
   sessions: SessionRecord[];
   totalPoints: number;
+  /** gamification bookkeeping — reward ids already celebrated */
+  awards: Awards;
+}
+
+/** What the learner has already been shown, so a reward lands once. */
+export interface Awards {
+  /** achievement ids already celebrated */
+  seen: string[];
 }
 
 /* ── account & sync ────────────────────────────────────────── */

@@ -81,6 +81,13 @@ differ (`src/content/games.ts`).
   (shaky / working / solid) (`src/engine/mastery.ts`).
 - **Streak with repair** — one free repair per week bridges a single missed
   day; daily goal includes a post-call setting where one set counts.
+- **Rank & rewards** — points climb a ten-rung training ladder (Preclinical →
+  Master Clinician); a rank card sits on Today, and Profile carries the rank
+  hero, the ladder, and a rewards wall. Rewards are tied to **real things**
+  (streaks, clean sets, topics taken solid, breadth), never a grind currency,
+  and a set that crosses a rank or unlocks a reward celebrates it on the summary
+  (`src/engine/progression.ts`, derived + tested). The status field
+  `awards.seen` only records what's been celebrated, so a milestone lands once.
 - **Focus scoping** — systems-course vs rotation modes with different defaults
   (timer off vs on), board level, and the honest 75/25 mix default.
 - **Screens** — Today (games hub, rhythm strip, mastery), Focus, Drill (renders
@@ -189,6 +196,7 @@ src/
     mastery.ts        decaying per-topic score + bands
     scoring.ts        base points + speed bonus (bonus-only timer)
     streak.ts         daily goal, streak, weekly repair
+    progression.ts    rank ladder + reward predicates (derived, pure)
   state/store.ts      localStorage persistence + atomic session commit
   sync/               optional cloud layer, no DOM, unit-tested
     account.ts        guest → local → cloud account model

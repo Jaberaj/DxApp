@@ -11,6 +11,13 @@ import { conceptById } from '../content/bank';
 import { applyResult, newTopicMastery } from '../engine/mastery';
 import { gradeFor, newSchedule, review } from '../engine/scheduler';
 import { completeSet, newStreak, type StreakUpdate } from '../engine/streak';
+import {
+  earnedIds,
+  tierForPoints,
+  type Achievement,
+  ACHIEVEMENTS,
+  type Tier,
+} from '../engine/progression';
 
 const STORAGE_KEY = 'cadence.v1';
 const STATE_VERSION = 1;
@@ -31,6 +38,7 @@ export function defaultState(): AppState {
     streak: newStreak(),
     sessions: [],
     totalPoints: 0,
+    awards: { seen: [] },
   };
 }
 
@@ -43,12 +51,20 @@ export function loadState(storage: Pick<Storage, 'getItem'> = localStorage): App
     const base = defaultState();
     // deep-merge focus so a payload from before board scoping still
     // gets a valid `boards` default; keep the stored updatedAt if present
-    return {
+    const merged: AppState = {
       ...base,
       ...parsed,
       updatedAt: parsed.updatedAt ?? base.updatedAt,
       focus: { ...base.focus, ...parsed.focus },
+      awards: parsed.awards ?? { seen: [] },
     };
+    // Grandfather existing progress: a payload from before rewards
+    // shouldn't dump every already-earned achievement at once — mark
+    // what's already true as "seen" so only FUTURE unlocks celebrate.
+    if (!parsed.awards) {
+      merged.awards = { seen: earnedIds(merged, new Date()) };
+    }
+    return merged;
   } catch {
     return defaultState();
   }
@@ -63,6 +79,10 @@ export interface CommitOutcome {
   streakUpdate: StreakUpdate;
   /** per-topic mastery before → after, for the "Moved today" panel */
   masteryMoves: { topic: string; before: number; after: number }[];
+  /** achievements unlocked by this set (not previously celebrated) */
+  newAwards: Achievement[];
+  /** the tier just reached, if this set crossed a rank boundary */
+  promotedTo: Tier | null;
 }
 
 /**
@@ -112,16 +132,27 @@ export function commitSession(
     after: Math.round(mastery[topic].score),
   }));
 
-  return {
-    state: {
-      ...state,
-      schedules,
-      mastery,
-      streak: streakUpdate.streak,
-      sessions: [...state.sessions, record].slice(-200),
-      totalPoints: state.totalPoints + totalPoints,
-    },
-    streakUpdate,
-    masteryMoves,
+  const newTotal = state.totalPoints + totalPoints;
+  const nextState: AppState = {
+    ...state,
+    schedules,
+    mastery,
+    streak: streakUpdate.streak,
+    sessions: [...state.sessions, record].slice(-200),
+    totalPoints: newTotal,
   };
+
+  // rewards: which achievements are newly true, and did we cross a rank?
+  const seen = new Set(state.awards?.seen ?? []);
+  const newAwards = ACHIEVEMENTS.filter((a) => !seen.has(a.id)).filter((a) =>
+    earnedIds(nextState, now).includes(a.id),
+  );
+  for (const a of newAwards) seen.add(a.id);
+  nextState.awards = { seen: [...seen] };
+
+  const beforeTier = tierForPoints(state.totalPoints).tier;
+  const afterTier = tierForPoints(newTotal).tier;
+  const promotedTo = afterTier.id !== beforeTier.id ? afterTier : null;
+
+  return { state: nextState, streakUpdate, masteryMoves, newAwards, promotedTo };
 }

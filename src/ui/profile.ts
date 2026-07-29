@@ -14,6 +14,7 @@ import { el, esc } from './dom';
 import { band, decayedScore } from '../engine/mastery';
 import { currentLength } from '../engine/streak';
 import { syncConfigured, toCloudAccount } from '../sync/account';
+import { achievementsWall, rankHero, tierLadder } from './awards';
 
 const STATUS_LABEL: Record<string, string> = {
   idle: 'Ready to sync',
@@ -47,11 +48,21 @@ export function renderProfile(ctx: Ctx): HTMLElement {
     </div>
   </div>`));
 
+  // ── rank, points, and progress to the next tier ──
+  scroll.appendChild(rankHero(state));
+
   scroll.appendChild(el(`<div class="figs" style="margin-top:12px">
-    <div class="fig"><b>${state.totalPoints}</b><span>Points</span></div>
+    <div class="fig"><b>${state.sessions.length}</b><span>Sets</span></div>
     <div class="fig"><b>${currentLength(state.streak, now)}</b><span>Day streak</span></div>
     <div class="fig"><b>${solid}</b><span>Solid topics</span></div>
   </div>`));
+
+  // ── rewards wall ──
+  scroll.appendChild(achievementsWall(state, now));
+
+  // ── the ladder ──
+  scroll.appendChild(el('<p class="sect">The ladder</p>'));
+  scroll.appendChild(tierLadder(state));
 
   // ── account actions ──
   scroll.appendChild(el('<p class="sect">Account</p>'));

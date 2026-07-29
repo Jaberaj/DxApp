@@ -101,6 +101,9 @@ export function mergeStates(a: AppState, b: AppState): AppState {
   const sessions = mergeSessions(a.sessions, b.sessions);
   const totalPoints = sessions.reduce((sum, s) => sum + s.totalPoints, 0);
   const primary = newer(a.updatedAt, b.updatedAt) ? a : b;
+  // union the celebrated-award ids so a reward seen on one device is not
+  // re-celebrated on another
+  const seen = [...new Set([...(a.awards?.seen ?? []), ...(b.awards?.seen ?? [])])];
   return {
     version: a.version,
     updatedAt: primary.updatedAt,
@@ -111,5 +114,6 @@ export function mergeStates(a: AppState, b: AppState): AppState {
     streak: mergeStreak(a.streak, b.streak),
     sessions,
     totalPoints,
+    awards: { seen },
   };
 }
