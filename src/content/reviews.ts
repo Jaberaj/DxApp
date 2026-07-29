@@ -137,3 +137,270 @@ record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-28', [
     notes: 'Verified: calcium stabilizes membrane without lowering K; shift (insulin+glucose/albuterol) then remove (dialysis/binder/diuresis).',
   },
 ]);
+
+/* ── Depth pour: GI / Renal / Neuro first-pass review ─────────────
+   Same honesty rule as the seed above: a single reviewer of a single
+   family (claude-opus-4-8, "anthropic") is deliberately NOT enough to
+   validate. These sit at `in_review` until a second independent model
+   family (or a human) agrees. Each verdict was checked against the
+   PUBLIC sources cited on the concept's own vignettes. */
+record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-29', [
+  /* Renal */
+  {
+    conceptId: 'siadh', verdict: 'pass',
+    sources: [
+      { ref: 'European Clinical Practice Guideline on Diagnosis and Treatment of Hyponatraemia (ESICM/ESE/ERA-EDTA)', year: 2014 },
+      { ref: 'Verbalis et al., Diagnosis, Evaluation, and Treatment of Hyponatremia (Am J Med)', year: 2013 },
+    ],
+    notes: 'Verified: euvolemic hypotonic hyponatremia with urine osm > 100 and urine Na > 30, normal thyroid/adrenal; chronic correction capped ~6–8 mmol/L/24 h to avoid ODS.',
+  },
+  {
+    conceptId: 'diabetes-insipidus', verdict: 'pass',
+    sources: [{ ref: 'Christ-Crain et al., Diabetes insipidus (Nature Reviews Disease Primers)', year: 2019 }],
+    notes: 'Verified: desmopressin concentrates urine in central but not nephrogenic DI; nephrogenic managed by removing cause + low-solute diet + thiazide.',
+  },
+  {
+    conceptId: 'hypokalemia', verdict: 'pass',
+    sources: [
+      { ref: 'Huang & Kuo, Mechanism of Hypokalemia in Magnesium Deficiency (JASN)', year: 2007 },
+      { ref: 'Cohn et al., New Guidelines for Potassium Replacement in Clinical Practice (Arch Intern Med)', year: 2000 },
+    ],
+    notes: 'Verified: hypomagnesemia drives renal K wasting → replace Mg first; ECG U waves/flat T are the mirror of hyperkalemia.',
+  },
+  {
+    conceptId: 'metabolic-alkalosis', verdict: 'pass',
+    sources: [{ ref: 'Berend et al., Physiological Approach to Assessment of Acid–Base Disturbances (NEJM)', year: 2014 }],
+    notes: 'Verified: urine Cl < 20 = saline-responsive (vomiting/NG/diuretics), > 20 = saline-resistant (mineralocorticoid excess). Single strong source.',
+  },
+  {
+    conceptId: 'acid-base-compensation', verdict: 'pass',
+    sources: [
+      { ref: 'Berend et al., Physiological Approach to Assessment of Acid–Base Disturbances (NEJM)', year: 2014 },
+      { ref: 'Seifter, Integration of Acid–Base and Electrolyte Disorders (NEJM)', year: 2014 },
+    ],
+    notes: 'Verified: Winter’s formula (1.5×HCO3 + 8 ± 2) detects a superimposed respiratory disorder; delta-gap unmasks a concurrent metabolic alkalosis.',
+  },
+  {
+    conceptId: 'minimal-change-disease', verdict: 'pass',
+    sources: [{ ref: 'KDIGO Clinical Practice Guideline for the Management of Glomerular Diseases', year: 2021 }],
+    notes: 'Verified: childhood nephrotic syndrome, normal LM with foot-process effacement, steroid-responsive first line.',
+  },
+  {
+    conceptId: 'membranous-nephropathy', verdict: 'pass',
+    sources: [
+      { ref: 'Beck et al., M-Type PLA2R as Target Antigen in Idiopathic Membranous Nephropathy (NEJM)', year: 2009 },
+      { ref: 'KDIGO Glomerular Diseases Guideline', year: 2021 },
+    ],
+    notes: 'Verified: adult nephrotic; anti-PLA2R in primary disease; PLA2R-negative/older → search for secondary cause (malignancy, HBV, SLE, drugs).',
+  },
+  {
+    conceptId: 'iga-nephropathy', verdict: 'pass',
+    sources: [{ ref: 'KDIGO Clinical Practice Guideline for the Management of Glomerular Diseases', year: 2021 }],
+    notes: 'Verified: synpharyngitic gross hematuria with normal complement and mesangial IgA; contrasts with the latent period + low C3 of PSGN.',
+  },
+  {
+    conceptId: 'psgn', verdict: 'pass',
+    sources: [
+      { ref: 'VanDeVoorde, Acute Poststreptococcal Glomerulonephritis (Pediatrics in Review)', year: 2015 },
+      { ref: 'KDIGO Glomerular Diseases Guideline', year: 2021 },
+    ],
+    notes: 'Verified: 1–3 week latent period, low C3, anti-DNase B/ASO, subepithelial humps; low-complement GN differential (PSGN/MPGN/lupus) is accurate.',
+  },
+  {
+    conceptId: 'diabetic-nephropathy', verdict: 'pass',
+    sources: [
+      { ref: 'KDIGO Clinical Practice Guideline for Diabetes Management in CKD', year: 2022 },
+      { ref: 'ADA Standards of Care in Diabetes — CKD', year: 2023 },
+    ],
+    notes: 'Verified: leading ESRD cause; albuminuria + Kimmelstiel–Wilson; ACEi/ARB (not both) + SGLT2 renoprotection.',
+  },
+  {
+    conceptId: 'rhabdomyolysis', verdict: 'pass',
+    sources: [{ ref: 'Bosch, Poch & Grau, Rhabdomyolysis and Acute Kidney Injury (NEJM)', year: 2009 }],
+    notes: 'Verified: heme-positive dipstick with no RBCs = myoglobinuria; hyperkalemia is the can’t-miss; early aggressive isotonic fluids protect the kidney.',
+  },
+  {
+    conceptId: 'contrast-induced-aki', verdict: 'pass',
+    sources: [
+      { ref: 'ACR Manual on Contrast Media', year: 2023 },
+      { ref: 'KDIGO Clinical Practice Guideline for Acute Kidney Injury', year: 2012 },
+    ],
+    notes: 'Verified: Cr rise 48–72 h, bland urine, usually reversible; contrasted against delayed, livedo/eosinophilia atheroembolic disease.',
+  },
+  {
+    conceptId: 'adpkd', verdict: 'pass',
+    sources: [{ ref: 'Chapman et al., KDIGO Controversies Conference on ADPKD', year: 2015 }],
+    notes: 'Verified: bilateral cystic kidneys, hypertension, hepatic cysts, MVP, and berry aneurysms → SAH risk on thunderclap headache.',
+  },
+  {
+    conceptId: 'nephrolithiasis-types', verdict: 'pass',
+    sources: [
+      { ref: 'Pearle et al., AUA Guideline: Medical Management of Kidney Stones', year: 2019 },
+      { ref: 'EAU Guidelines on Urolithiasis', year: 2023 },
+    ],
+    notes: 'Verified: struvite staghorn in alkaline urine with urease+ organisms; radiolucent uric acid stones in acidic urine treated by alkalinization ± allopurinol.',
+  },
+  {
+    conceptId: 'uremia-dialysis', verdict: 'pass',
+    sources: [
+      { ref: 'KDOQI Clinical Practice Guideline for Hemodialysis Adequacy', year: 2015 },
+      { ref: 'KDIGO Clinical Practice Guideline for Acute Kidney Injury', year: 2012 },
+    ],
+    notes: 'Verified: A-E-I-O-U emergent dialysis indications; not triggered by an isolated creatinine value.',
+  },
+  /* GI */
+  {
+    conceptId: 'gerd-barrett', verdict: 'pass',
+    sources: [
+      { ref: 'Katz et al., ACG Clinical Guideline for the Diagnosis and Management of GERD', year: 2022 },
+      { ref: 'Shaheen et al., ACG Clinical Guideline: Barrett’s Esophagus', year: 2022 },
+    ],
+    notes: 'Verified: alarm features (dysphagia, weight loss, bleeding/anemia) → endoscopy; Barrett intestinal metaplasia → adenocarcinoma risk.',
+  },
+  {
+    conceptId: 'achalasia', verdict: 'pass',
+    sources: [{ ref: 'Vaezi et al., ACG Clinical Guideline: Diagnosis and Management of Achalasia', year: 2020 }],
+    notes: 'Verified: dysphagia to solids AND liquids, bird-beak, incomplete LES relaxation; older/rapid/weight-losing → exclude pseudoachalasia (tumor).',
+  },
+  {
+    conceptId: 'esophageal-cancer', verdict: 'pass',
+    sources: [{ ref: 'Rustgi & El-Serag, Esophageal Carcinoma (NEJM review)', year: 2014 }],
+    notes: 'Verified: SCC proximal/mid with smoking+alcohol; adenocarcinoma distal with GERD/Barrett/obesity; endoscopy with biopsy first, then staging.',
+  },
+  {
+    conceptId: 'mallory-weiss', verdict: 'pass',
+    sources: [{ ref: 'Laine et al., ACG Clinical Guideline: Upper Gastrointestinal and Ulcer Bleeding', year: 2021 }],
+    notes: 'Verified: mucosal tear (self-limited hematemesis after retching) vs transmural Boerhaave rupture (pneumomediastinum, sepsis). Single strong source.',
+  },
+  {
+    conceptId: 'acute-viral-hepatitis', verdict: 'pass',
+    sources: [
+      { ref: 'CDC — Interpretation of Hepatitis B Serologic Test Results', year: 2020 },
+      { ref: 'Terrault et al., AASLD Guidance on Chronic Hepatitis B', year: 2018 },
+    ],
+    notes: 'Verified: HBsAg = active, anti-HBs = immunity, isolated anti-HBc IgM = window; HAV IgM = acute, self-limited.',
+  },
+  {
+    conceptId: 'acetaminophen-toxicity', verdict: 'pass',
+    sources: [
+      { ref: 'Heard, Acetylcysteine for Acetaminophen Poisoning (NEJM review)', year: 2008 },
+      { ref: 'Lee et al., AASLD Position Paper: The Management of Acute Liver Failure', year: 2011 },
+    ],
+    notes: 'Verified: nomogram-guided NAC given early without waiting for enzymes; transaminases in the thousands + rising INR = APAP acute liver failure.',
+  },
+  {
+    conceptId: 'wilson-disease', verdict: 'pass',
+    sources: [
+      { ref: 'Roberts & Schilsky, AASLD Practice Guideline: Diagnosis and Treatment of Wilson Disease', year: 2008 },
+      { ref: 'EASL Clinical Practice Guidelines: Wilson’s Disease', year: 2012 },
+    ],
+    notes: 'Verified: young hepatic + neuropsychiatric disease, Kayser–Fleischer rings, low ceruloplasmin, high urinary copper; contrasts with iron in hemochromatosis.',
+  },
+  {
+    conceptId: 'hemochromatosis', verdict: 'pass',
+    sources: [{ ref: 'Kowdley et al., ACG Clinical Guideline: Hereditary Hemochromatosis', year: 2019 }],
+    notes: 'Verified: C282Y homozygosity, high transferrin saturation/ferritin, bronze diabetes + MCP arthropathy; phlebotomy first line, chelation only if intolerant.',
+  },
+  {
+    conceptId: 'hepatorenal-syndrome', verdict: 'pass',
+    sources: [
+      { ref: 'Biggins et al., AASLD Practice Guidance: Ascites, SBP, and HRS in Cirrhosis', year: 2021 },
+      { ref: 'EASL Clinical Practice Guidelines for Decompensated Cirrhosis', year: 2018 },
+    ],
+    notes: 'Verified: AKI in cirrhosis, very low urine Na, bland sediment, no response to albumin; diagnosis of exclusion vs prerenal/ATN.',
+  },
+  {
+    conceptId: 'diverticulitis', verdict: 'pass',
+    sources: [
+      { ref: 'Peery et al., AGA Institute Guideline on the Management of Acute Diverticulitis', year: 2015 },
+      { ref: 'Hall et al., ASCRS Clinical Practice Guidelines: Left-Sided Colonic Diverticulitis', year: 2020 },
+    ],
+    notes: 'Verified: LLQ pain + fever → CT; colonoscopy deferred to after recovery; uncomplicated disease can be outpatient with selective antibiotics.',
+  },
+  {
+    conceptId: 'bowel-obstruction', verdict: 'pass',
+    sources: [{ ref: 'Ten Broek et al., Bologna Guidelines for Adhesive Small Bowel Obstruction (WSES)', year: 2018 }],
+    notes: 'Verified: adhesive SBO with air-fluid levels and colicky pain vs quiet ileus; fever/peritonitis/rising lactate = strangulation needing surgery.',
+  },
+  {
+    conceptId: 'choledocholithiasis', verdict: 'pass',
+    sources: [
+      { ref: 'Buxbaum et al., ASGE Guideline on the Management of Choledocholithiasis', year: 2019 },
+      { ref: 'Tokyo Guidelines (TG18) for Acute Cholangitis and Cholecystitis', year: 2018 },
+    ],
+    notes: 'Verified: painless obstructive jaundice + dilated duct (choledocholithiasis) vs Murphy-positive cholecystitis vs Charcot-triad cholangitis.',
+  },
+  /* Neuro */
+  {
+    conceptId: 'intracerebral-hemorrhage', verdict: 'pass',
+    sources: [{ ref: 'Greenberg et al., AHA/ASA Guideline for the Management of Spontaneous Intracerebral Hemorrhage', year: 2022 }],
+    notes: 'Verified: hyperdense blood on non-contrast CT, early headache/vomiting/depressed consciousness; thrombolysis contraindicated; controlled BP lowering + reversal.',
+  },
+  {
+    conceptId: 'tia', verdict: 'pass',
+    sources: [{ ref: 'Kleindorfer et al., AHA/ASA Guideline for the Prevention of Stroke in Patients With Stroke and TIA', year: 2021 }],
+    notes: 'Verified: transient focal deficit with full recovery and no infarct; high early stroke risk → urgent carotid imaging + rhythm evaluation.',
+  },
+  {
+    conceptId: 'epidural-vs-subdural', verdict: 'pass',
+    sources: [{ ref: 'Carney et al., Brain Trauma Foundation Guidelines for the Management of Severe TBI', year: 2016 }],
+    notes: 'Verified: epidural biconvex/lucid interval/does not cross sutures (middle meningeal); subdural crescent/crosses sutures/bridging veins, insidious in elderly.',
+  },
+  {
+    conceptId: 'stroke-localization', verdict: 'pass',
+    sources: [{ ref: 'Powers et al., AHA/ASA Guidelines for the Early Management of Acute Ischemic Stroke', year: 2019 }],
+    notes: 'Verified: MCA face/arm > leg + aphasia/neglect; ACA leg > arm; PCA hemianopia; lacunar pure motor/sensory without cortical signs.',
+  },
+  {
+    conceptId: 'bell-palsy', verdict: 'pass',
+    sources: [
+      { ref: 'Baugh et al., AAO-HNS Clinical Practice Guideline: Bell’s Palsy', year: 2013 },
+      { ref: 'Gronseth & Paduga, AAN Evidence-Based Guideline Update: Steroids and Antivirals for Bell Palsy', year: 2012 },
+    ],
+    notes: 'Verified: peripheral CN VII weakens whole hemiface incl. forehead (central spares forehead); early corticosteroids + eye protection.',
+  },
+  {
+    conceptId: 'als', verdict: 'pass',
+    sources: [{ ref: 'Miller et al., AAN Practice Parameter Update: The Care of the Patient With ALS', year: 2009 }],
+    notes: 'Verified: combined UMN + LMN signs with normal sensation; bulbar-onset variant accurate; sensory sparing separates it from MS/GBS/MG.',
+  },
+  {
+    conceptId: 'dementia-subtypes', verdict: 'pass',
+    sources: [
+      { ref: 'McKeith et al., Diagnosis and Management of Dementia with Lewy Bodies (4th DLB Consortium report, Neurology)', year: 2017 },
+      { ref: 'Rascovsky et al., Revised Criteria for Behavioural Variant Frontotemporal Dementia (Brain)', year: 2011 },
+    ],
+    notes: 'Verified: DLB = fluctuations + visual hallucinations + parkinsonism + neuroleptic sensitivity; bvFTD = early disinhibition with spared memory.',
+  },
+  {
+    conceptId: 'nph', verdict: 'pass',
+    sources: [{ ref: 'Relkin et al., Diagnosing Idiopathic Normal-Pressure Hydrocephalus (Neurosurgery guideline)', year: 2005 }],
+    notes: 'Verified: magnetic gait + incontinence + cognitive slowing with ventriculomegaly out of proportion to atrophy; potentially reversible.',
+  },
+  {
+    conceptId: 'huntington', verdict: 'pass',
+    sources: [{ ref: 'Bates et al., Huntington Disease (Nature Reviews Disease Primers)', year: 2015 }],
+    notes: 'Verified: AD CAG-repeat chorea + psychiatric change + caudate atrophy; anticipation greatest with paternal transmission.',
+  },
+  {
+    conceptId: 'iih', verdict: 'pass',
+    sources: [
+      { ref: 'Friedman et al., Revised Diagnostic Criteria for the Pseudotumor Cerebri Syndrome (Neurology)', year: 2013 },
+      { ref: 'NORDIC IIHTT, Effect of Acetazolamide on Visual Function in IIH (JAMA)', year: 2014 },
+    ],
+    notes: 'Verified: young obese woman, papilledema, raised opening pressure with normal CSF/imaging; weight loss + acetazolamide; exclude venous sinus thrombosis.',
+  },
+  {
+    conceptId: 'trigeminal-neuralgia', verdict: 'pass',
+    sources: [{ ref: 'Cruccu et al., Trigeminal Neuralgia: New Classification and Diagnostic Grading (Neurology)', year: 2016 }],
+    notes: 'Verified: brief electric-shock V2/V3 pain triggered by light touch with normal interictal exam; carbamazepine first line.',
+  },
+  {
+    conceptId: 'central-pontine-myelinolysis', verdict: 'pass',
+    sources: [
+      { ref: 'Sterns, Disorders of Plasma Sodium (NEJM review)', year: 2015 },
+      { ref: 'European Hyponatraemia Guideline (ESICM/ESE/ERA-EDTA)', year: 2014 },
+    ],
+    notes: 'Verified: delayed dysarthria/dysphagia/spastic quadriparesis days after overrapid Na correction; the mechanistic basis of the ~6–8 mmol/L/24 h cap.',
+  },
+]);

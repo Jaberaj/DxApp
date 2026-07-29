@@ -99,9 +99,44 @@ export function buildSet(
   // Drives both concept ranking (fresh concepts first) and variant
   // choice (a resurfacing concept shows a patient you haven't just seen).
   const recency = recentItemRanks(state);
-  const chosen = [...pick(blockPool, blockN, rng, recency), ...pick(reviewPool, reviewN, rng, recency)];
+  const chosen = [
+    ...pickWithNewFloor(blockPool, blockN, rng, recency),
+    ...pick(reviewPool, reviewN, rng, recency),
+  ];
   const set = chosen.map((c) => chooseVariant(c, state, rng, recency));
   return shuffle(set, rng);
+}
+
+/** Share of the on-block slots reserved for never-seen concepts. */
+export const NEW_CONCEPT_FLOOR = 0.34;
+
+/**
+ * Pick n on-block concepts, but guarantee brand-new concepts are not
+ * crowded out by a backlog of due reviews. Ranking alone puts due
+ * reviews ahead of never-seen concepts, so once the due backlog exceeds
+ * the set size the new concepts never surface. Here we first reserve up
+ * to a NEW_CONCEPT_FLOOR share of the slots for never-seen concepts (when
+ * any exist), then fill the remainder from the whole pool by rank — so
+ * reviews keep priority for the rest while new content still lands. This
+ * is the load-time coverage push the session builder promises.
+ */
+function pickWithNewFloor(
+  pool: Candidate[],
+  n: number,
+  rng: () => number,
+  recency: Map<string, number>,
+): Candidate[] {
+  if (n <= 0 || pool.length === 0) return [];
+  const fresh = pool.filter((c) => !c.seen);
+  // No new concepts (or the whole pool is new) → nothing to protect.
+  if (fresh.length === 0 || fresh.length === pool.length) return pick(pool, n, rng, recency);
+
+  const reserved = Math.min(fresh.length, Math.max(1, Math.round(n * NEW_CONCEPT_FLOOR)));
+  const newPicks = pick(fresh, reserved, rng, recency);
+  const takenIds = new Set(newPicks.map((c) => c.concept.conceptId));
+  const rest = pool.filter((c) => !takenIds.has(c.concept.conceptId));
+  const restPicks = pick(rest, n - newPicks.length, rng, recency);
+  return [...newPicks, ...restPicks];
 }
 
 /** Sessions looked back over for suppression. */

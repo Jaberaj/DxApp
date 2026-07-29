@@ -22,12 +22,15 @@ import { EXPANSION } from './expansion';
 import { EXPANSION2 } from './expansion2';
 import { EXPANSION3 } from './expansion3';
 import { EXPANSION4 } from './expansion4';
+import { GI_DEPTH } from './giDepth';
+import { RENAL_DEPTH } from './renalDepth';
+import { NEURO_DEPTH } from './neuroDepth';
 import { reviewsFor } from './reviews';
 
 export { v };
 
 /** Content modules merged on top of the base bank, in order. */
-const MODULES: ContentModule[] = [EXPANSION, EXPANSION2, EXPANSION3, EXPANSION4];
+const MODULES: ContentModule[] = [EXPANSION, EXPANSION2, EXPANSION3, EXPANSION4, GI_DEPTH, RENAL_DEPTH, NEURO_DEPTH];
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
   if (raw.tags.boards) return raw.tags.boards;
