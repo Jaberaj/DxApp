@@ -483,3 +483,134 @@ record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-29', [
     notes: 'Verified: pancytopenia + blasts; AML (Auer rods, adults) vs ALL (TdT+, children, CNS/testicular/mediastinal); APL t(15;17) → DIC needs urgent ATRA.',
   },
 ]);
+
+/* ── Knowledge-graph-driven breadth pour: Neuro + Cardio ──────────
+   The usmle-knowledge-graph supplied the disease list; every clinical
+   fact was authored from and checked against the PUBLIC sources cited
+   on each concept's vignettes (the graph's own prose/edges are
+   placeholder and were not used). One family → in_review, not validated. */
+record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-29', [
+  /* Neuro */
+  {
+    conceptId: 'brainstem-stroke', verdict: 'pass',
+    sources: [{ ref: 'Powers et al., AHA/ASA Guidelines for the Early Management of Acute Ischemic Stroke', year: 2019 }],
+    notes: 'Verified: Wallenberg crossed findings (ipsilateral face + Horner/dysphagia, contralateral body), Weber (CN III + contralateral hemiparesis), locked-in (ventral pons, preserved vertical gaze). Single guideline source.',
+  },
+  {
+    conceptId: 'lacunar-syndrome', verdict: 'pass',
+    sources: [
+      { ref: 'Powers et al., AHA/ASA Guidelines for the Early Management of Acute Ischemic Stroke', year: 2019 },
+      { ref: 'Kleindorfer et al., AHA/ASA Guideline for the Prevention of Stroke in Patients With Stroke and TIA', year: 2021 },
+    ],
+    notes: 'Verified: pure motor (internal capsule) / pure sensory (thalamus) without cortical signs; small-vessel prevention = BP/glucose/lipids + antiplatelet, not anticoagulation.',
+  },
+  {
+    conceptId: 'watershed-infarct', verdict: 'pass',
+    sources: [{ ref: 'Powers et al., AHA/ASA Guidelines for the Early Management of Acute Ischemic Stroke', year: 2019 }],
+    notes: 'Verified: border-zone infarcts after global hypotension; "man-in-a-barrel" proximal weakness. Single guideline source.',
+  },
+  {
+    conceptId: 'absence-seizure', verdict: 'pass',
+    sources: [{ ref: 'Glauser et al., Ethosuximide, Valproic Acid, and Lamotrigine in Childhood Absence Epilepsy (NEJM)', year: 2010 }],
+    notes: 'Verified: 3-Hz spike-wave, hyperventilation-provoked staring, no postictal state; ethosuximide first-line; carbamazepine can worsen. Single strong RCT source.',
+  },
+  {
+    conceptId: 'jme', verdict: 'pass',
+    sources: [{ ref: 'Glauser et al., ILAE Treatment Guidelines: Antiepileptic Drug Efficacy', year: 2013 }],
+    notes: 'Verified: morning myoclonus + GTC, sleep-deprivation/alcohol triggers, generalized polyspike-wave, lifelong. Single guideline source.',
+  },
+  {
+    conceptId: 'febrile-seizure', verdict: 'pass',
+    sources: [{ ref: 'AAP Clinical Practice Guideline: Neurodiagnostic Evaluation of the Child With a Simple Febrile Seizure', year: 2011 }],
+    notes: 'Verified: simple (brief, generalized, once/24 h, normal exam, 6 mo–5 y) → reassurance, no chronic AED or routine LP; complex features prompt workup. Single guideline.',
+  },
+  {
+    conceptId: 'cord-syndromes', verdict: 'pass',
+    sources: [{ ref: 'Kirshblum et al., International Standards for Neurological Classification of Spinal Cord Injury (ASIA)', year: 2011 }],
+    notes: 'Verified: Brown-Séquard (ipsilateral motor+dorsal column, contralateral pain/temp), anterior cord (spares dorsal columns), central cord (cape-like, arms>legs). Single standards source.',
+  },
+  {
+    conceptId: 'alzheimer-disease', verdict: 'pass',
+    sources: [
+      { ref: 'McKhann et al., NIA-AA Diagnostic Guidelines for Alzheimer’s Disease (Alzheimers Dement)', year: 2011 },
+      { ref: 'AAN Practice Guideline Update: Mild Cognitive Impairment', year: 2018 },
+    ],
+    notes: 'Verified: insidious memory-first decline with medial temporal atrophy, amyloid/tau; cholinesterase inhibitors ± memantine symptomatic. Distinct from vascular/DLB/FTD/NPH.',
+  },
+  {
+    conceptId: 'optic-neuritis', verdict: 'pass',
+    sources: [{ ref: 'Beck et al., The Optic Neuritis Treatment Trial (ONTT, NEJM)', year: 1992 }],
+    notes: 'Verified: painful monocular loss + RAPD + dyschromatopsia, MS link; IV methylprednisolone (oral prednisone alone avoided — ONTT). Landmark trial source.',
+  },
+  {
+    conceptId: 'carpal-tunnel', verdict: 'pass',
+    sources: [{ ref: 'AAOS Clinical Practice Guideline: Management of Carpal Tunnel Syndrome', year: 2016 }],
+    notes: 'Verified: median-distribution nocturnal paresthesias, Phalen/Tinel, thenar atrophy late; splint ± steroid injection first, surgery for severe/refractory. Single guideline.',
+  },
+  {
+    conceptId: 'neurosyphilis', verdict: 'pass',
+    sources: [{ ref: 'CDC Sexually Transmitted Infections Treatment Guidelines — Neurosyphilis', year: 2021 }],
+    notes: 'Verified: tabes dorsalis (dorsal-column, Argyll Robertson pupil), reactive CSF-VDRL; IV aqueous penicillin G (IM benzathine inadequate). Single guideline source.',
+  },
+  /* Cardio */
+  {
+    conceptId: 'acs-spectrum', verdict: 'pass',
+    sources: [{ ref: 'Amsterdam et al., ACC/AHA Guideline for the Management of Patients With Non-ST-Elevation ACS', year: 2014 }],
+    notes: 'Verified: UA (troponin−), NSTEMI (troponin+, no ST elevation), STEMI (ST elevation); NSTE-ACS → DAPT + anticoagulation + risk-stratified angiography, not fibrinolysis.',
+  },
+  {
+    conceptId: 'stable-angina', verdict: 'pass',
+    sources: [{ ref: 'Fihn et al., ACC/AHA Guideline for the Diagnosis and Management of Patients With Stable Ischemic Heart Disease', year: 2012 }],
+    notes: 'Verified: exertional, reproducible, relieved by rest/nitro; prognostic aspirin+statin plus antianginal beta-blocker/nitrate. Single guideline source.',
+  },
+  {
+    conceptId: 'prinzmetal-angina', verdict: 'pass',
+    sources: [{ ref: 'JCS Guidelines for Diagnosis and Treatment of Patients With Vasospastic Angina', year: 2013 }],
+    notes: 'Verified: rest angina with transient ST elevation and normal coronaries; calcium-channel blockers/nitrates, avoid nonselective beta-blockers (unopposed alpha). Single guideline.',
+  },
+  {
+    conceptId: 'dressler', verdict: 'pass',
+    sources: [{ ref: 'Adler et al., ESC Guidelines for the Diagnosis and Management of Pericardial Diseases', year: 2015 }],
+    notes: 'Verified: immune post-MI pericarditis weeks later, pleuritic positional pain + rub + fever; distinct from recurrent ischemia. Single guideline source.',
+  },
+  {
+    conceptId: 'pericardial-effusion', verdict: 'pass',
+    sources: [{ ref: 'Adler et al., ESC Guidelines for the Diagnosis and Management of Pericardial Diseases', year: 2015 }],
+    notes: 'Verified: muffled sounds, low-voltage QRS + electrical alternans, water-bottle silhouette; echo confirms and assesses tamponade physiology. Single guideline source.',
+  },
+  {
+    conceptId: 'long-qt', verdict: 'pass',
+    sources: [{ ref: 'Priori et al., ESC Guidelines for Ventricular Arrhythmias and Prevention of Sudden Cardiac Death', year: 2015 }],
+    notes: 'Verified: prolonged QTc → torsades; remove QT-prolonging drugs + correct K/Mg, beta-blockers for congenital. Single guideline source.',
+  },
+  {
+    conceptId: 'brugada', verdict: 'pass',
+    sources: [{ ref: 'Priori et al., ESC Guidelines for Ventricular Arrhythmias and Prevention of Sudden Cardiac Death', year: 2015 }],
+    notes: 'Verified: coved type-1 ST elevation V1–V2, SCN5A, sudden-death risk unmasked by fever/Na-channel blockers; ICD for high risk. Single guideline source.',
+  },
+  {
+    conceptId: 'hcm', verdict: 'pass',
+    sources: [{ ref: 'Ommen et al., ACC/AHA Guideline for the Diagnosis and Treatment of Patients With Hypertrophic Cardiomyopathy', year: 2020 }],
+    notes: 'Verified: murmur louder with reduced preload (Valsalva/standing), asymmetric septal hypertrophy, athlete sudden death; avoid preload/afterload reducers, beta-blockers first. Single guideline.',
+  },
+  {
+    conceptId: 'infective-endocarditis', verdict: 'pass',
+    sources: [{ ref: 'Baddour et al., AHA Scientific Statement: Infective Endocarditis in Adults', year: 2015 }],
+    notes: 'Verified: fever + new murmur, Duke criteria (blood cultures + echo), peripheral stigmata; IVDU → tricuspid S. aureus, subacute native → viridans strep. Single statement source.',
+  },
+  {
+    conceptId: 'mitral-regurgitation', verdict: 'pass',
+    sources: [{ ref: 'Otto et al., ACC/AHA Guideline for the Management of Patients With Valvular Heart Disease', year: 2020 }],
+    notes: 'Verified: holosystolic apical murmur to axilla, louder with handgrip; contrasted with AS (carotid radiation, softens with reduced preload) and HCM. Single guideline source.',
+  },
+  {
+    conceptId: 'dilated-cardiomyopathy', verdict: 'pass',
+    sources: [{ ref: 'Heidenreich et al., AHA/ACC/HFSA Guideline for the Management of Heart Failure', year: 2022 }],
+    notes: 'Verified: dilated low-EF ventricle with S3 (alcohol/viral/peripartum/doxorubicin/Chagas); distinct from restrictive and HCM. Single guideline source.',
+  },
+  {
+    conceptId: 'rheumatic-fever', verdict: 'pass',
+    sources: [{ ref: 'Gewitz et al., AHA Revision of the Jones Criteria for the Diagnosis of Acute Rheumatic Fever', year: 2015 }],
+    notes: 'Verified: post-strep Jones criteria (migratory polyarthritis, carditis, Sydenham chorea, erythema marginatum, nodules), mitral stenosis late; penicillin + anti-inflammatory + secondary prophylaxis.',
+  },
+]);

@@ -30,6 +30,8 @@ import { RENAL_DEPTH2 } from './renalDepth2';
 import { CARDIO_DEPTH } from './cardioDepth';
 import { PULM_DEPTH } from './pulmDepth';
 import { HEME_DEPTH } from './hemeDepth';
+import { NEURO_DEPTH3 } from './neuroDepth3';
+import { CARDIO_DEPTH2 } from './cardioDepth2';
 import { reviewsFor } from './reviews';
 
 export { v };
@@ -39,6 +41,7 @@ const MODULES: ContentModule[] = [
   EXPANSION, EXPANSION2, EXPANSION3, EXPANSION4,
   GI_DEPTH, RENAL_DEPTH, NEURO_DEPTH,
   NEURO_DEPTH2, RENAL_DEPTH2, CARDIO_DEPTH, PULM_DEPTH, HEME_DEPTH,
+  NEURO_DEPTH3, CARDIO_DEPTH2,
 ];
 
 function deriveBoards(raw: RawItem): BoardLevel[] {
