@@ -34,6 +34,11 @@ async function playSet() {
     await page.waitForSelector('.result');
     await page.click('#checkBtn'); // Next / Finish
   }
+  // dismiss any full-screen celebration (milestone / level-up) before the summary
+  while (await page.locator('.cel-cta').count()) {
+    await page.locator('.cel-cta').first().click();
+    await page.waitForTimeout(60);
+  }
   await page.waitForSelector('.figs');
   return (await page.textContent('h2.big')).trim();
 }
@@ -52,12 +57,12 @@ try {
   if (!/Step 2/.test(focusSub)) throw new Error(`board scope not shown: ${focusSub}`);
 
   // Play each of the four mini-games in turn (incl. Rapid Treatments)
-  const gameCount = await page.locator('.task').count();
+  const gameCount = await page.locator('.game').count();
   if (gameCount < 4) throw new Error(`expected 4 games, saw ${gameCount}`);
 
   for (let g = 0; g < 4; g++) {
-    await page.waitForSelector('.task');
-    await page.locator('.task').nth(g).click();
+    await page.waitForSelector('.game');
+    await page.locator('.game').nth(g).click();
     const headline = await playSet();
     if (!/^\d+ of \d+$/.test(headline)) throw new Error(`bad summary headline: ${headline}`);
     await page.click('.btn.quiet'); // back to today
@@ -80,20 +85,23 @@ try {
   const scope = await page.textContent('.focusbar .txt span');
   if (!/subtopic/.test(scope)) throw new Error(`subtopic scope not shown: ${scope}`);
   // a drill under the narrowed focus still runs
-  await page.locator('.task').first().click();
+  await page.locator('.game').first().click();
   await playSet();
   await page.click('.btn.quiet');
   await page.waitForSelector('.focusbar');
 
-  // Streak registered and persists across reload
-  await page.waitForSelector('.streak-chip');
+  // Progress (sets today) persists across reload — via the daily-goal ring,
+  // which reflects committed sessions regardless of answer correctness
+  await page.waitForSelector('.goal-num');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.streak-chip');
-  const streak = (await page.textContent('.streak-chip')).trim();
-  if (Number(streak) < 1) throw new Error(`streak did not persist: ${streak}`);
+  await page.waitForSelector('.goal-num');
+  const sets = Number((await page.textContent('.goal-num')).match(/^(\d+)/)?.[1] ?? 0);
+  if (sets < 1) throw new Error(`sets did not persist: ${sets}`);
+  // the level pill renders with the persisted point total
+  await page.waitForSelector('.lvpill-pts');
 
   if (errors.length) throw new Error(`page errors: ${errors.join('; ')}`);
-  console.log(`smoke ok — four games + subtopic filter, streak ${streak} persisted`);
+  console.log(`smoke ok — four games + subtopic filter, ${sets} sets persisted`);
 } finally {
   await browser.close();
   await server.close();

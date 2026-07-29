@@ -101,9 +101,17 @@ export function mergeStates(a: AppState, b: AppState): AppState {
   const sessions = mergeSessions(a.sessions, b.sessions);
   const totalPoints = sessions.reduce((sum, s) => sum + s.totalPoints, 0);
   const primary = newer(a.updatedAt, b.updatedAt) ? a : b;
-  // union the celebrated-award ids so a reward seen on one device is not
-  // re-celebrated on another
-  const seen = [...new Set([...(a.awards?.seen ?? []), ...(b.awards?.seen ?? [])])];
+  // gamification: union what's been celebrated/claimed, keep the best of
+  // the accumulative counters, so nothing is re-celebrated or lost
+  const aw = a.awards ?? { seen: [] };
+  const bw = b.awards ?? { seen: [] };
+  const awards = {
+    seen: [...new Set([...(aw.seen ?? []), ...(bw.seen ?? [])])],
+    shields: Math.max(aw.shields ?? 0, bw.shields ?? 0),
+    bestStreak: Math.max(aw.bestStreak ?? 0, bw.bestStreak ?? 0),
+    bestCombo: Math.max(aw.bestCombo ?? 0, bw.bestCombo ?? 0),
+    claimedMilestones: [...new Set([...(aw.claimedMilestones ?? []), ...(bw.claimedMilestones ?? [])])],
+  };
   return {
     version: a.version,
     updatedAt: primary.updatedAt,
@@ -114,6 +122,6 @@ export function mergeStates(a: AppState, b: AppState): AppState {
     streak: mergeStreak(a.streak, b.streak),
     sessions,
     totalPoints,
-    awards: { seen },
+    awards,
   };
 }

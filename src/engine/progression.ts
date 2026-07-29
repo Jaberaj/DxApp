@@ -1,178 +1,220 @@
 /* ══════════════════════════════════════════════════════════════
-   Progression — tiers, ranks, and rewards.
-   Cadence keeps score like an instrument, not an arcade: the ladder
-   is the medical training path, and rewards are tied to REAL things
-   (streaks, clean sets, topics taken solid, breadth), never to
-   grinding a currency. Everything here is pure and derived from
-   AppState, so it is fully unit-tested and never a second source of
-   truth. `awards.seen` (in state) only records what has already been
-   celebrated, so a milestone is congratulated once.
+   Progression — levels, ranks, streak shields, combos, and badges.
+   The reward layer from the v5 gamification pass (docs live in the
+   design's CADENCE_GAMIFICATION.md). It keeps the app's dry, earned-
+   praise voice: every number is derived from real state, nothing is a
+   placeholder. Pure and unit-tested — the UI only renders what these
+   functions compute, and the store folds the results into state.
    ══════════════════════════════════════════════════════════════ */
 
 import type { AppState, System } from '../types';
 import { band, decayedScore } from './mastery';
 import { currentLength } from './streak';
 
-/** A rank on the training ladder. Accent maps to a CSS colour token. */
-export interface Tier {
-  id: string;
-  name: string;
-  /** cumulative points at which this tier is reached */
-  minPoints: number;
-  /** colour key: ink | pulse | depth | plum | brass */
-  accent: 'ink' | 'pulse' | 'depth' | 'plum' | 'brass';
+/* ── levels & ranks ─────────────────────────────────────────── */
+
+/** Points per level. Level = floor(points / LEVEL_SIZE) + 1, capped. */
+export const LEVEL_SIZE = 400;
+export const MAX_LEVEL = 20;
+
+/** Rank name by level band (spec §2). */
+export function rankForLevel(level: number): string {
+  if (level <= 2) return 'Preclinical';
+  if (level <= 4) return 'Clerk';
+  if (level <= 7) return 'Sub-I';
+  if (level <= 11) return 'Acting Intern';
+  if (level <= 15) return 'Intern';
+  return 'Resident';
 }
 
-/**
- * The ladder. Thresholds are spaced so a rank means real work — a set
- * is ~250–360 points, so Clerk is a few sets, Attending is a season.
- */
-export const TIERS: Tier[] = [
-  { id: 'preclinical', name: 'Preclinical', minPoints: 0, accent: 'ink' },
-  { id: 'clerk', name: 'Clinical Clerk', minPoints: 500, accent: 'pulse' },
-  { id: 'subi', name: 'Sub-Intern', minPoints: 1500, accent: 'pulse' },
-  { id: 'intern', name: 'Intern', minPoints: 3500, accent: 'depth' },
-  { id: 'resident', name: 'Resident', minPoints: 7000, accent: 'depth' },
-  { id: 'senior', name: 'Senior Resident', minPoints: 12000, accent: 'plum' },
-  { id: 'chief', name: 'Chief Resident', minPoints: 20000, accent: 'plum' },
-  { id: 'fellow', name: 'Fellow', minPoints: 32000, accent: 'brass' },
-  { id: 'attending', name: 'Attending', minPoints: 50000, accent: 'brass' },
-  { id: 'master', name: 'Master Clinician', minPoints: 80000, accent: 'brass' },
-];
-
-export interface TierProgress {
-  tier: Tier;
-  /** 0-based index into TIERS */
-  index: number;
-  /** the next tier, or null at the top */
-  next: Tier | null;
-  /** points still needed to reach `next` (0 at the top) */
+export interface LevelInfo {
+  level: number;
+  rank: string;
+  /** points accumulated inside the current level (0…LEVEL_SIZE) */
+  pointsIntoLevel: number;
+  /** points needed to reach the next level (0 at the cap) */
   toNext: number;
-  /** 0–1 fraction of the way from `tier` to `next` (1 at the top) */
+  /** 0–1 fraction of the way through the current level (1 at the cap) */
   fraction: number;
+  /** the rank the next level unlocks, if it differs; else null */
+  nextRank: string | null;
 }
 
-/** Where a point total sits on the ladder. */
-export function tierForPoints(points: number): TierProgress {
-  let index = 0;
-  for (let i = 0; i < TIERS.length; i++) {
-    if (points >= TIERS[i].minPoints) index = i;
+export function levelFor(points: number): LevelInfo {
+  const raw = Math.floor(Math.max(0, points) / LEVEL_SIZE) + 1;
+  const level = Math.min(MAX_LEVEL, raw);
+  const rank = rankForLevel(level);
+  if (level >= MAX_LEVEL) {
+    return { level, rank, pointsIntoLevel: LEVEL_SIZE, toNext: 0, fraction: 1, nextRank: null };
   }
-  const tier = TIERS[index];
-  const next = TIERS[index + 1] ?? null;
-  if (!next) return { tier, index, next: null, toNext: 0, fraction: 1 };
-  const span = next.minPoints - tier.minPoints;
-  const into = points - tier.minPoints;
+  const floor = (level - 1) * LEVEL_SIZE;
+  const pointsIntoLevel = points - floor;
+  const nextRank = rankForLevel(level + 1);
   return {
-    tier,
-    index,
-    next,
-    toNext: Math.max(0, next.minPoints - points),
-    fraction: Math.max(0, Math.min(1, into / span)),
+    level,
+    rank,
+    pointsIntoLevel,
+    toNext: level * LEVEL_SIZE - points,
+    fraction: Math.max(0, Math.min(1, pointsIntoLevel / LEVEL_SIZE)),
+    nextRank: nextRank !== rank ? nextRank : null,
   };
 }
 
-/* ── achievements ───────────────────────────────────────────── */
+/* ── streak milestones & shields ────────────────────────────── */
 
-export type AchievementGroup = 'Milestones' | 'Precision' | 'Consistency' | 'Mastery' | 'Breadth';
+export const MILESTONES = [3, 7, 14, 30, 60, 100];
+export const MAX_SHIELDS = 3;
 
-export interface Achievement {
+export interface MilestoneReward {
+  day: number;
+  points: number;
+  shield: number;
+  badgeId: string;
+}
+
+/** Reward for reaching a streak milestone (spec §2). */
+export function milestoneReward(day: number): MilestoneReward {
+  return { day, points: Math.min(50 * day, 1500), shield: 1, badgeId: `streak-${day}` };
+}
+
+/** The next milestone at or after the current streak, or null past 100. */
+export function nextMilestone(streakDays: number): number | null {
+  return MILESTONES.find((m) => m > streakDays) ?? null;
+}
+
+/** Milestones newly crossed moving from `before` to `after` streak days. */
+export function crossedMilestones(before: number, after: number): number[] {
+  return MILESTONES.filter((m) => m > before && m <= after);
+}
+
+/* ── combo scoring ──────────────────────────────────────────── */
+
+/** Base award per correct item; combo multiplies it. */
+export const COMBO_BASE = 45;
+/** The multiplier caps here (the combo counter itself can go higher). */
+export const COMBO_CAP = 10;
+
+/**
+ * Points for a correct answer at the given combo (after incrementing).
+ * A wrong answer is 0 and resets the combo elsewhere. The multiplier is
+ * capped at COMBO_CAP even though the counter keeps climbing.
+ */
+export function comboAward(comboAfterCorrect: number): number {
+  return COMBO_BASE * Math.min(Math.max(1, comboAfterCorrect), COMBO_CAP);
+}
+
+/* ── badges (the shelf) ─────────────────────────────────────── */
+
+export type BadgeGrad = 'green' | 'blue' | 'amber' | 'violet';
+
+export interface Badge {
   id: string;
   name: string;
-  desc: string;
-  group: AchievementGroup;
-  /** inline SVG path(s) for a 24×24 stroke icon */
-  icon: string;
-  /** true when earned, given the derived context */
+  /** short glyph shown in the shelf chip, e.g. '5', 'Ca', '✓' */
+  glyph: string;
+  grad: BadgeGrad;
   test: (c: AwardContext) => boolean;
 }
 
-/** Numbers every achievement predicate reads — derived once, pure. */
+/** Numbers every badge predicate reads — derived once, pure. */
 export interface AwardContext {
   points: number;
+  level: number;
   sets: number;
   streak: number;
-  /** topics currently at the `solid` band */
+  bestStreak: number;
+  bestCombo: number;
   solidTopics: number;
   /** sets finished with zero misses */
   cleanStrips: number;
-  /** distinct mini-games played */
+  /** sets finished 12+ items all correct */
+  perfectSets: number;
+  /** a set with accuracy ≥ 90% */
+  ninetiesSets: number;
   gamesPlayed: number;
-  /** distinct systems the learner has touched */
   systemsTouched: number;
-  /** concepts ever seen (have a schedule) */
-  conceptsSeen: number;
 }
 
 export function awardContext(state: AppState, now: Date): AwardContext {
   const masteries = Object.values(state.mastery);
   const solidTopics = masteries.filter((m) => band(decayedScore(m, now)) === 'solid').length;
   const systemsTouched = new Set<System>(masteries.map((m) => m.system)).size;
-  const cleanStrips = state.sessions.filter(
-    (s) => s.results.length > 0 && s.results.every((r) => r.correct),
-  ).length;
-  const gamesPlayed = new Set(state.sessions.map((s) => s.game)).size;
+  let cleanStrips = 0;
+  let perfectSets = 0;
+  let ninetiesSets = 0;
+  for (const s of state.sessions) {
+    const n = s.results.length;
+    if (n === 0) continue;
+    const correct = s.results.filter((r) => r.correct).length;
+    if (correct === n) cleanStrips++;
+    if (correct === n && n >= 12) perfectSets++;
+    if (correct / n >= 0.9) ninetiesSets++;
+  }
   return {
     points: state.totalPoints,
+    level: levelFor(state.totalPoints).level,
     sets: state.sessions.length,
     streak: currentLength(state.streak, now),
+    bestStreak: state.awards?.bestStreak ?? 0,
+    bestCombo: state.awards?.bestCombo ?? 0,
     solidTopics,
     cleanStrips,
-    gamesPlayed,
+    perfectSets,
+    ninetiesSets,
+    gamesPlayed: new Set(state.sessions.map((s) => s.game)).size,
     systemsTouched,
-    conceptsSeen: Object.keys(state.schedules).length,
   };
 }
 
-// 24×24 stroke icons (match the app's inline-SVG convention)
-const IC = {
-  flag: '<path d="M5 21V4M5 4c4-2 8 2 12 0v9c-4 2-8-2-12 0"/>',
-  stack: '<path d="M12 3l9 5-9 5-9-5 9-5M3 13l9 5 9-5M3 17l9 5 9-5"/>',
-  trophy: '<path d="M7 4h10v4a5 5 0 0 1-10 0V4M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 14v6"/>',
-  pulse: '<path d="M2 12h4l2.5-7 4 14L15 12h7"/>',
-  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
-  flame: '<path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-1 .5-2 1.5-3 .3 1 1 1.5 1.5 1.5C9 9 10 6 12 3Z"/>',
-  calendar: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>',
-  shield: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3Z"/>',
-  layers: '<path d="M12 2l9 5-9 5-9-5 9-5M3 12l9 5 9-5M3 17l9 5 9-5"/>',
-  compass: '<circle cx="12" cy="12" r="9"/><path d="M16 8l-2 6-6 2 2-6 6-2Z"/>',
-  toolkit: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
-  gem: '<path d="M6 3h12l3 6-9 12L3 9l3-6ZM3 9h18M9 3l3 18M15 3l-3 18"/>',
-};
+/** The shelf. Milestone badges (streak-N) are added dynamically below. */
+export const BADGES: Badge[] = [
+  { id: 'first-read', name: 'First read', glyph: '✓', grad: 'green', test: (c) => c.sets >= 1 },
+  { id: 'ten-sets', name: 'Ten sets', glyph: '10', grad: 'green', test: (c) => c.sets >= 10 },
+  { id: 'century', name: 'Century', glyph: '100', grad: 'green', test: (c) => c.sets >= 100 },
 
-/** The reward set. Order is display order within a group. */
-export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first-read', name: 'First Read', desc: 'Complete your first set.', group: 'Milestones', icon: IC.flag, test: (c) => c.sets >= 1 },
-  { id: 'ten-sets', name: 'Ten Sets', desc: 'Complete ten sets.', group: 'Milestones', icon: IC.stack, test: (c) => c.sets >= 10 },
-  { id: 'century', name: 'Century', desc: 'Complete one hundred sets.', group: 'Milestones', icon: IC.trophy, test: (c) => c.sets >= 100 },
-  { id: 'ten-k', name: '10k Club', desc: 'Reach 10,000 points.', group: 'Milestones', icon: IC.gem, test: (c) => c.points >= 10000 },
+  { id: 'five-combo', name: 'Five in a row', glyph: '5', grad: 'amber', test: (c) => c.bestCombo >= 5 },
+  { id: 'ten-combo', name: 'Ten in a row', glyph: '×10', grad: 'amber', test: (c) => c.bestCombo >= 10 },
+  { id: 'clean-strip', name: 'Clean strip', glyph: '⌁', grad: 'green', test: (c) => c.cleanStrips >= 1 },
+  { id: 'perfect-set', name: 'Perfect set', glyph: '12', grad: 'blue', test: (c) => c.perfectSets >= 1 },
+  { id: 'nineties', name: 'Nineties club', glyph: '90', grad: 'blue', test: (c) => c.ninetiesSets >= 1 },
 
-  { id: 'clean-strip', name: 'Clean Strip', desc: 'Finish a set with no misses.', group: 'Precision', icon: IC.pulse, test: (c) => c.cleanStrips >= 1 },
-  { id: 'sharpshooter', name: 'Sharpshooter', desc: 'Five clean strips.', group: 'Precision', icon: IC.target, test: (c) => c.cleanStrips >= 5 },
+  { id: 'first-solid', name: 'First solid', glyph: 'S', grad: 'green', test: (c) => c.solidTopics >= 1 },
+  { id: 'ten-solid', name: 'Consultant', glyph: '10', grad: 'green', test: (c) => c.solidTopics >= 10 },
 
-  { id: 'on-call', name: 'On Call', desc: 'A three-day streak.', group: 'Consistency', icon: IC.flame, test: (c) => c.streak >= 3 },
-  { id: 'rounding', name: 'Rounding Daily', desc: 'A seven-day streak.', group: 'Consistency', icon: IC.calendar, test: (c) => c.streak >= 7 },
-  { id: 'ironman', name: 'Ironman', desc: 'A thirty-day streak.', group: 'Consistency', icon: IC.shield, test: (c) => c.streak >= 30 },
+  { id: 'full-toolkit', name: 'Full toolkit', glyph: '4', grad: 'violet', test: (c) => c.gamesPlayed >= 4 },
+  { id: 'explorer', name: 'Board explorer', glyph: '8', grad: 'violet', test: (c) => c.systemsTouched >= 8 },
+  { id: 'ten-k', name: '10k club', glyph: '10k', grad: 'amber', test: (c) => c.points >= 10000 },
 
-  { id: 'first-solid', name: 'First Solid', desc: 'Take a topic to solid.', group: 'Mastery', icon: IC.layers, test: (c) => c.solidTopics >= 1 },
-  { id: 'ten-solid', name: 'Consultant', desc: 'Ten topics at solid.', group: 'Mastery', icon: IC.stack, test: (c) => c.solidTopics >= 10 },
-
-  { id: 'full-toolkit', name: 'Full Toolkit', desc: 'Play all four mini-games.', group: 'Breadth', icon: IC.toolkit, test: (c) => c.gamesPlayed >= 4 },
-  { id: 'explorer', name: 'Board Explorer', desc: 'Reach eight body systems.', group: 'Breadth', icon: IC.compass, test: (c) => c.systemsTouched >= 8 },
+  { id: 'level-5', name: 'Sub-intern', glyph: 'L5', grad: 'blue', test: (c) => c.level >= 5 },
+  { id: 'level-10', name: 'Acting intern', glyph: 'L10', grad: 'blue', test: (c) => c.level >= 10 },
 ];
 
-/** Achievement ids currently earned. */
-export function earnedIds(state: AppState, now: Date): string[] {
-  const ctx = awardContext(state, now);
-  return ACHIEVEMENTS.filter((a) => a.test(ctx)).map((a) => a.id);
+/** Milestone badge definitions (earned via claimed streak milestones). */
+export function milestoneBadge(day: number): Badge {
+  const glyph = day >= 100 ? '100' : String(day);
+  return {
+    id: `streak-${day}`,
+    name: day >= 30 ? `${day}-day streak` : day === 7 ? 'Full week' : `${day}-day streak`,
+    glyph,
+    grad: 'amber',
+    test: () => false, // awarded explicitly on milestone, not derived
+  };
 }
 
-/** Achievement objects currently earned. */
-export function earnedAchievements(state: AppState, now: Date): Achievement[] {
-  const ctx = awardContext(state, now);
-  return ACHIEVEMENTS.filter((a) => a.test(ctx));
+/** All badge definitions including milestone badges, for the shelf. */
+export function allBadges(): Badge[] {
+  return [...BADGES, ...MILESTONES.map(milestoneBadge)];
 }
 
-export function achievementById(id: string): Achievement | undefined {
-  return ACHIEVEMENTS.find((a) => a.id === id);
+/** Badge ids currently earned from the derived context (non-milestone). */
+export function earnedBadgeIds(state: AppState, now: Date): string[] {
+  const ctx = awardContext(state, now);
+  const derived = BADGES.filter((b) => b.test(ctx)).map((b) => b.id);
+  // milestone badges are earned by claiming (recorded in seen), keep them
+  const claimed = (state.awards?.claimedMilestones ?? []).map((d) => `streak-${d}`);
+  return [...new Set([...derived, ...claimed])];
+}
+
+export function badgeById(id: string): Badge | undefined {
+  return allBadges().find((b) => b.id === id);
 }

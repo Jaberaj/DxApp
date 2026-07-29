@@ -27,7 +27,7 @@ export function weekOf(d: Date): string {
   return dateKey(copy);
 }
 
-function daysBetween(aKey: string, bKey: string): number {
+export function daysBetween(aKey: string, bKey: string): number {
   return Math.round((new Date(bKey).getTime() - new Date(aKey).getTime()) / 86_400_000);
 }
 

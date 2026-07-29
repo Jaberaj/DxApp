@@ -16,6 +16,10 @@ export interface GameDef {
   itemTypes: ItemType[];
   /** accent colour token (maps to a CSS class) */
   accent: 'pulse' | 'depth' | 'plum' | 'clay';
+  /** identity gradient for the icon tile (v5 redesign) */
+  grad: string;
+  /** point-chip colour key (maps to a CSS class) */
+  pkey: 'green' | 'amber' | 'blue' | 'violet';
   /** inner SVG for the game icon (24×24 viewBox, stroke: currentColor) */
   icon: string;
   setSize: number;
@@ -31,6 +35,8 @@ export const GAMES: GameDef[] = [
     tagline: 'One-liners, discriminators, next steps — reasoning at speed',
     itemTypes: DDX_TYPES,
     accent: 'pulse',
+    grad: 'linear-gradient(140deg,#00C68F,#0E7C5A)',
+    pkey: 'green',
     icon: '<path d="M2 12h4l2.5-7 4 14L15 12h7"/>',
     setSize: 12,
   },
@@ -40,6 +46,8 @@ export const GAMES: GameDef[] = [
     tagline: 'First-line, contraindications, sequencing — what to do and what not to give',
     itemTypes: TX_TYPES,
     accent: 'clay',
+    grad: 'linear-gradient(140deg,#FFA53D,#E0621A)',
+    pkey: 'amber',
     icon: '<path d="M10.5 20.5a5 5 0 0 1-7-7l6-6a5 5 0 0 1 7 7l-6 6ZM8 8l8 8"/>',
     setSize: 10,
   },
@@ -49,6 +57,8 @@ export const GAMES: GameDef[] = [
     tagline: 'Read the strip — rate, rhythm, and the one pearl that names it',
     itemTypes: ['ecg'],
     accent: 'depth',
+    grad: 'linear-gradient(140deg,#4B85FF,#1B3A5C)',
+    pkey: 'blue',
     icon: '<path d="M2 12h3l1.5-4 2.5 8 2-11 2.5 15 2-8 1.5 4H22"/>',
     setSize: 10,
   },
@@ -58,6 +68,8 @@ export const GAMES: GameDef[] = [
     tagline: 'Genes, findings, and keywords → the diagnosis, fast',
     itemTypes: ['association'],
     accent: 'plum',
+    grad: 'linear-gradient(140deg,#A97BFF,#5B21B6)',
+    pkey: 'violet',
     icon: '<path d="M13 2 3 14h7l-1 8 11-13h-7l1-7z"/>',
     setSize: 12,
   },

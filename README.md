@@ -81,13 +81,19 @@ differ (`src/content/games.ts`).
   (shaky / working / solid) (`src/engine/mastery.ts`).
 - **Streak with repair** — one free repair per week bridges a single missed
   day; daily goal includes a post-call setting where one set counts.
-- **Rank & rewards** — points climb a ten-rung training ladder (Preclinical →
-  Master Clinician); a rank card sits on Today, and Profile carries the rank
-  hero, the ladder, and a rewards wall. Rewards are tied to **real things**
-  (streaks, clean sets, topics taken solid, breadth), never a grind currency,
-  and a set that crosses a rank or unlocks a reward celebrates it on the summary
-  (`src/engine/progression.ts`, derived + tested). The status field
-  `awards.seen` only records what's been celebrated, so a milestone lands once.
+- **Rank, streak & rewards (v5 gamification)** — points earn **levels**
+  (400/level, capped 20) with clinical ranks (Preclinical → Clerk → Sub-I →
+  Acting Intern → Intern → Resident): a level-ring pill on Today, a level card on
+  Progress/Profile. The **streak** is the hero — a flame card that names the next
+  milestone; **milestones** (days 3/7/14/30/60/100) award points, a **shield**,
+  and a badge with a full-screen celebration; a shield covers one missed day.
+  In the drill, a **combo** multiplies each correct answer (45 × combo, capped
+  ×10) and fires a badge inline at five and ten in a row. A **21-badge shelf**
+  on Profile, and mastery shown in **tiers** (solid/building/shaky) instead of a
+  wall of crimson. Everything is derived from real state and tied to **real
+  things**, never a grind currency (`src/engine/progression.ts`, pure + tested).
+  All of it rides the same local store and export/import JSON — no server.
+  Motion respects `prefers-reduced-motion`.
 - **Focus scoping** — systems-course vs rotation modes with different defaults
   (timer off vs on), board level, and the honest 75/25 mix default.
 - **Screens** — Today (games hub, rhythm strip, mastery), Focus, Drill (renders
@@ -196,7 +202,7 @@ src/
     mastery.ts        decaying per-topic score + bands
     scoring.ts        base points + speed bonus (bonus-only timer)
     streak.ts         daily goal, streak, weekly repair
-    progression.ts    rank ladder + reward predicates (derived, pure)
+    progression.ts    levels, ranks, milestones, combos, badges (derived, pure)
   state/store.ts      localStorage persistence + atomic session commit
   sync/               optional cloud layer, no DOM, unit-tested
     account.ts        guest → local → cloud account model

@@ -11,10 +11,8 @@
 
 import type { Ctx } from './app';
 import { el, esc } from './dom';
-import { band, decayedScore } from '../engine/mastery';
-import { currentLength } from '../engine/streak';
 import { syncConfigured, toCloudAccount } from '../sync/account';
-import { achievementsWall, rankHero, tierLadder } from './awards';
+import { badgeShelf, identityCard, streakCard } from './awards';
 
 const STATUS_LABEL: Record<string, string> = {
   idle: 'Ready to sync',
@@ -28,10 +26,6 @@ const STATUS_LABEL: Record<string, string> = {
 export function renderProfile(ctx: Ctx): HTMLElement {
   const { state, account } = ctx;
   const now = new Date();
-  const name =
-    account.displayName ?? (account.kind === 'guest' ? 'Guest' : account.email ?? 'Learner');
-
-  const solid = Object.values(state.mastery).filter((m) => band(decayedScore(m, now)) === 'solid').length;
 
   const root = el(`<div class="flex-col">
     <div class="topbar"><div class="ttl"><h2 class="big">Profile</h2></div></div>
@@ -39,30 +33,12 @@ export function renderProfile(ctx: Ctx): HTMLElement {
   </div>`);
   const scroll = root.querySelector('.scroll')!;
 
-  // ── identity + gamified summary ──
-  scroll.appendChild(el(`<div class="card pad profile-hero">
-    <div class="avatar">${esc(initials(name))}</div>
-    <div class="who">
-      <b>${esc(name)}</b>
-      <span>${account.kind === 'cloud' ? esc(STATUS_LABEL[ctx.syncStatus]) : account.kind === 'local' ? 'Local profile · this device' : 'Guest · progress saved on this device'}</span>
-    </div>
-  </div>`));
+  // ── identity: level, rank, name ──
+  scroll.appendChild(identityCard(state, account));
+  scroll.appendChild(streakCard(state, now));
 
-  // ── rank, points, and progress to the next tier ──
-  scroll.appendChild(rankHero(state));
-
-  scroll.appendChild(el(`<div class="figs" style="margin-top:12px">
-    <div class="fig"><b>${state.sessions.length}</b><span>Sets</span></div>
-    <div class="fig"><b>${currentLength(state.streak, now)}</b><span>Day streak</span></div>
-    <div class="fig"><b>${solid}</b><span>Solid topics</span></div>
-  </div>`));
-
-  // ── rewards wall ──
-  scroll.appendChild(achievementsWall(state, now));
-
-  // ── the ladder ──
-  scroll.appendChild(el('<p class="sect">The ladder</p>'));
-  scroll.appendChild(tierLadder(state));
+  // ── the badge shelf ──
+  scroll.appendChild(badgeShelf(state, now));
 
   // ── account actions ──
   scroll.appendChild(el('<p class="sect">Account</p>'));
@@ -201,10 +177,4 @@ function dataCard(ctx: Ctx): HTMLElement {
     }
   });
   return card;
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
 }

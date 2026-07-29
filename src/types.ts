@@ -355,10 +355,24 @@ export interface AppState {
   awards: Awards;
 }
 
-/** What the learner has already been shown, so a reward lands once. */
+/**
+ * Gamification bookkeeping. `seen` records which badges have already
+ * been celebrated so a reward lands once; the rest is the v5 reward
+ * layer (levels are derived from points, not stored). All fields
+ * default safely for pre-gamification payloads — treat missing as
+ * 0 / empty.
+ */
 export interface Awards {
-  /** achievement ids already celebrated */
+  /** badge ids already celebrated */
   seen: string[];
+  /** streak shields in reserve (max 3); a shield covers one missed day */
+  shields?: number;
+  /** longest streak ever reached */
+  bestStreak?: number;
+  /** longest in-drill combo ever reached */
+  bestCombo?: number;
+  /** streak-day milestones already fired (3, 7, 14, …) */
+  claimedMilestones?: number[];
 }
 
 /* ── account & sync ────────────────────────────────────────── */

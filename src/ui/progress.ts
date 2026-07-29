@@ -1,13 +1,16 @@
 /* ══════════════════════════════════════════════════════════════
-   Progress — mastery across every topic, grouped by system, with
-   bands. Milestones tied to real things, not levels.
+   Progress — mastery across every topic, grouped by system (v5).
+   A level card on top, a solid/building/shaky census, and tier
+   colours on every bar: the same data, an order of magnitude less
+   demoralising than a wall of crimson.
    ══════════════════════════════════════════════════════════════ */
 
 import type { Ctx } from './app';
 import type { System } from '../types';
-import { band, decayedScore } from '../engine/mastery';
-import { currentLength } from '../engine/streak';
+import { decayedScore } from '../engine/mastery';
+import { earnedBadgeIds } from '../engine/progression';
 import { el, esc } from './dom';
+import { levelCard, censusRow } from './awards';
 
 const SYSTEM_NAMES: Record<System, string> = {
   cardiovascular: 'Cardiovascular',
@@ -26,7 +29,9 @@ const SYSTEM_NAMES: Record<System, string> = {
   pediatrics: 'Pediatrics',
 };
 
-const BAND_LABEL = { shaky: 'shaky', working: 'working', solid: 'solid' } as const;
+function tierOf(score: number): 'solid' | 'building' | 'shaky' {
+  return score >= 70 ? 'solid' : score >= 45 ? 'building' : 'shaky';
+}
 
 export function renderProgress(ctx: Ctx): HTMLElement {
   const { state } = ctx;
@@ -43,10 +48,15 @@ export function renderProgress(ctx: Ctx): HTMLElement {
   </div>`);
   const scroll = root.querySelector('.scroll')!;
 
-  scroll.appendChild(el(`<div class="figs">
-    <div class="fig"><b>${state.totalPoints}</b><span>Points</span></div>
-    <div class="fig"><b>${state.sessions.length}</b><span>Sets</span></div>
-    <div class="fig"><b>${currentLength(state.streak, now)}</b><span>Day streak</span></div>
+  // ── level card + game stats ──
+  scroll.appendChild(levelCard(state));
+
+  const bestCombo = state.awards?.bestCombo ?? 0;
+  const badges = earnedBadgeIds(state, now).length;
+  scroll.appendChild(el(`<div class="pstats">
+    <div class="pstat"><b>${state.sessions.length}</b><span>SETS</span></div>
+    <div class="pstat flame"><b>×${bestCombo}</b><span>BEST COMBO</span></div>
+    <div class="pstat"><b>${badges}</b><span>BADGES</span></div>
   </div>`));
 
   const topics = Object.values(state.mastery);
@@ -56,6 +66,8 @@ export function renderProgress(ctx: Ctx): HTMLElement {
     </div>`));
     return root;
   }
+
+  scroll.appendChild(censusRow(state, now));
 
   const bySystem = new Map<System, typeof topics>();
   for (const t of topics) {
@@ -69,10 +81,10 @@ export function renderProgress(ctx: Ctx): HTMLElement {
     const card = el('<div class="card pad"></div>');
     for (const t of list.sort((a, b) => decayedScore(a, now) - decayedScore(b, now))) {
       const score = Math.round(decayedScore(t, now));
-      const b = band(score);
+      const tier = tierOf(score);
       card.appendChild(el(`<div class="mrow">
-        <div class="mtop"><span>${esc(t.topic)}</span><em>${score}% · ${BAND_LABEL[b]}</em></div>
-        <div class="mtrack"><div class="mfill ${b === 'working' ? 'mid' : b === 'shaky' ? 'low' : ''}" style="width:${score}%"></div></div>
+        <div class="mtop"><span>${esc(t.topic)}</span><em class="tier-${tier}">${score}% · ${tier}</em></div>
+        <div class="mtrack"><div class="mfill tier-${tier}" style="width:${score}%"></div></div>
       </div>`));
     }
     scroll.appendChild(card);

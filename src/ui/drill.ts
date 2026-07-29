@@ -1,10 +1,11 @@
 /* ══════════════════════════════════════════════════════════════
-   The drill — one screen, every mini-game.
-   The set is built for whichever game launched it (Rapid
-   Differentials, ECG Rhythms, Buzzword Blitz) and narrowed by the
-   board scope. The timer affects bonus points only, never
-   correctness. Feedback is immediate and short: one sentence on the
-   discriminator, one on the best distractor.
+   The drill — one screen, every mini-game (v5 gamified).
+   Combo scoring: a correct answer is worth 45 × the running combo
+   (multiplier capped at ×10); a wrong answer scores nothing and
+   resets the combo. The timer never touches correctness. Feedback is
+   immediate: the answer, one sentence on the discriminator, one on
+   the best distractor, the points earned, and — when a run reaches
+   five or ten — the badge fires inline, not on a summary later.
    ══════════════════════════════════════════════════════════════ */
 
 import type { Ctx } from './app';
@@ -14,11 +15,12 @@ import { CONCEPTS, ITEMS, conceptById } from '../content/bank';
 import { gameById, type GameDef } from '../content/games';
 import { buildSet } from '../engine/session';
 import { shuffleOptions } from '../engine/shuffle';
-import { pointsFor } from '../engine/scoring';
-import type { Achievement, Tier } from '../engine/progression';
+import { comboAward, COMBO_CAP, type Badge } from '../engine/progression';
 import { commitSession } from '../state/store';
-import { el, esc, fmtSeconds } from './dom';
+import { el, esc } from './dom';
 import { renderEcg } from './ecgRenderer';
+import { badgeAwardCard } from './awards';
+import { runCelebrations, type Celebration } from './celebrate';
 
 export interface SummaryPayload {
   game: GameId;
@@ -27,14 +29,16 @@ export interface SummaryPayload {
   moves: { topic: string; before: number; after: number }[];
   repaired: boolean;
   points: number;
-  /** achievements unlocked by this set */
-  newAwards: Achievement[];
-  /** rank reached by this set, if any */
-  promotedTo: Tier | null;
+  /** badges unlocked by this set */
+  newBadges: Badge[];
+  /** badge ids already shown inline during the drill (don't repeat) */
+  shownInline: string[];
 }
 
 const CLOSE_ICON =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>';
+const FLAME_SMALL =
+  '<svg width="11" height="11" viewBox="0 0 24 24" fill="#fff"><path d="M13.5 1.5c.6 3.4-1.3 4.8-2.7 6.2C9.2 9.3 8 10.7 8 13a4 4 0 0 0 1.3 3c-.2-1.9.6-3.3 1.8-4.4 1.5 1.9 1 3.4.4 4.7 1.1-.4 2-1.3 2.5-2.4.7 1 .9 2.2.5 3.4 1.6-1 2.6-2.9 2.6-5 0-4.6-3.2-6.6-3.6-10.8Z"/></svg>';
 
 /** Noun for the counter, per game. */
 const UNIT: Record<GameId, string> = { rapid_ddx: 'Item', rapid_tx: 'Item', ecg: 'Rhythm', buzzword: 'Buzzword' };
@@ -50,6 +54,8 @@ export function renderDrill(ctx: Ctx): HTMLElement {
   });
   const timerSeconds = ctx.state.settings.timerSeconds;
   const results: SessionItemResult[] = [];
+  let combo = 0;
+  const shownInline: string[] = [];
 
   if (set.length === 0) {
     const empty = el(`<div class="flex-col">
@@ -77,6 +83,7 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     <div class="topbar drill-top">
       <button class="iconb" type="button" aria-label="Leave set">${CLOSE_ICON}</button>
       <span class="pips" id="pips"></span>
+      <span class="combo" id="combo" hidden>${FLAME_SMALL}<span id="comboN">×2</span></span>
       <span class="mono points" id="points">0</span>
     </div>
     <div class="timer" id="timer"><i></i></div>
@@ -88,6 +95,8 @@ export function renderDrill(ctx: Ctx): HTMLElement {
 
   const pips = root.querySelector('#pips')!;
   const pointsEl = root.querySelector('#points')!;
+  const comboEl = root.querySelector('#combo') as HTMLElement;
+  const comboN = root.querySelector('#comboN')!;
   const timer = root.querySelector('#timer') as HTMLElement;
   const timerBar = timer.querySelector('i') as HTMLElement;
   const body = root.querySelector('#body')!;
@@ -112,33 +121,46 @@ export function renderDrill(ctx: Ctx): HTMLElement {
       .join('');
   }
 
+  function renderCombo(): void {
+    if (combo >= 2) {
+      comboEl.hidden = false;
+      comboN.textContent = `×${Math.min(combo, COMBO_CAP)}`;
+      comboEl.style.animation = 'none';
+      void comboEl.offsetWidth;
+      comboEl.style.animation = 'cd-pop .3s cubic-bezier(.22,.9,.3,1)';
+    } else {
+      comboEl.hidden = true;
+    }
+  }
+
   function startTimer(): void {
     timedOut = false;
     clearTimeout(timeoutHandle);
-    if (timerSeconds <= 0) {
-      timer.style.display = 'none';
-      return;
-    }
-    timer.style.display = '';
     timerBar.style.animation = 'none';
     void timerBar.offsetWidth;
+    if (timerSeconds <= 0) {
+      // no timer: show a static set-progress rail instead of faking a drain
+      timer.classList.add('progress');
+      timerBar.style.width = `${(index / set.length) * 100}%`;
+      return;
+    }
+    timer.classList.remove('progress');
+    timerBar.style.width = '';
     timerBar.style.animation = `drain ${timerSeconds}s linear forwards`;
     timeoutHandle = setTimeout(() => {
       timedOut = true;
     }, timerSeconds * 1000);
   }
 
-  /** The prompt block — differs by game: rhythm strip, buzzword, or vignette. */
   function promptBlock(item: Item): HTMLElement {
     if (item.ecg) {
       const dr = renderEcg(item.ecg);
       const paths = dr.paths.map((p) => `<path class="ecg-${p.cls}" d="${p.d}"/>`).join('');
-      const card = el(`<div class="ecg-card">
+      return el(`<div class="ecg-card">
         <div class="ecg-lead">${esc(dr.label)}</div>
         <svg class="ecg-svg" viewBox="0 0 ${dr.width} ${dr.height}" preserveAspectRatio="none" role="img" aria-label="Rhythm strip to interpret">${paths}</svg>
         ${item.stem ? `<p class="ecg-context">${esc(item.stem)}</p>` : ''}
       </div>`);
-      return card;
     }
     if (item.type === 'association') {
       return el(`<div class="vig assoc">
@@ -181,15 +203,12 @@ export function renderDrill(ctx: Ctx): HTMLElement {
 
     body.appendChild(promptBlock(item));
 
-    // authored order always lists the answer first — shuffle for display
-    // so "A" never becomes the tell (correctness is by option id, not position)
     displayOptions = shuffleOptions(item.options);
-
     const opts = el('<div class="opts" id="opts"></div>');
     displayOptions.forEach((o, i) => {
       const key = String.fromCharCode(65 + i);
       const b = el(
-        `<button class="opt" type="button" data-id="${esc(o.id)}"><span class="key">${key}</span>${esc(o.text)}<span class="mk"></span></button>`,
+        `<button class="opt" type="button" data-id="${esc(o.id)}"><span class="key">${key}</span><span class="opt-tx">${esc(o.text)}</span><span class="mk"></span></button>`,
       );
       b.addEventListener('click', () => toggleOption(item, o.id, multi));
       opts.appendChild(b);
@@ -217,7 +236,7 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     });
     const ready = multi ? selected.size === (item.selectCount ?? 1) : selected.size === 1;
     checkBtn.disabled = !ready;
-    checkBtn.className = ready ? 'btn' : 'btn off';
+    checkBtn.className = ready ? 'btn check' : 'btn off';
   }
 
   function check(): void {
@@ -231,8 +250,9 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     const correctIds = new Set(item.options.filter((o) => o.correct).map((o) => o.id));
     const correct =
       selected.size === correctIds.size && [...selected].every((id) => correctIds.has(id));
-    const effectiveElapsed = timedOut ? timerSeconds * 1000 : elapsedMs;
-    const points = pointsFor(correct, effectiveElapsed, timerSeconds);
+
+    combo = correct ? combo + 1 : 0;
+    const points = correct ? comboAward(combo) : 0;
 
     results.push({
       itemId: item.itemId,
@@ -243,7 +263,9 @@ export function renderDrill(ctx: Ctx): HTMLElement {
       timedOut,
       points,
     });
-    pointsEl.textContent = String(totalPoints());
+    // count-up the running score
+    animatePoints(pointsEl as HTMLElement, totalPoints());
+    renderCombo();
     renderPips();
 
     body.querySelectorAll('.opt').forEach((b) => {
@@ -259,35 +281,36 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     });
     body.querySelector('#opts')!.classList.add('locked');
 
-    body.querySelector('#resultSlot')!.appendChild(resultCard(item, correct, selected, points, elapsedMs));
+    const slot = body.querySelector('#resultSlot')!;
+    slot.appendChild(resultCard(item, correct, selected, points));
+    // inline combo badge — the moment is worth more than a later tally
+    const comboBadge = correct && combo === 5 ? { id: 'five-combo', glyph: '5', name: 'Five in a row' }
+      : correct && combo === 10 ? { id: 'ten-combo', glyph: '×10', name: 'Ten in a row' }
+      : null;
+    if (comboBadge && !shownInline.includes(comboBadge.id)) {
+      shownInline.push(comboBadge.id);
+      slot.appendChild(badgeAwardCard(comboBadge.glyph, 'amber', comboBadge.name));
+    }
 
     const last = index === set.length - 1;
-    checkBtn.textContent = last ? 'Finish set' : 'Next';
-    checkBtn.className = 'btn pulse';
+    checkBtn.textContent = last ? 'Finish set' : 'Next item';
+    checkBtn.className = 'btn next';
     checkBtn.disabled = false;
     checkBtn.focus();
   }
 
-  function resultCard(
-    item: Item,
-    correct: boolean,
-    chosen: Set<string>,
-    points: number,
-    elapsedMs: number,
-  ): HTMLElement {
+  function resultCard(item: Item, correct: boolean, chosen: Set<string>, points: number): HTMLElement {
     const answers = item.options.filter((o) => o.correct).map((o) => o.text);
     const title = correct ? answers.join(' · ') : `It was ${answers.join(', ')}`;
-    const xp = correct
-      ? `+${points}${timerSeconds > 0 && !timedOut ? ' · ' + fmtSeconds(elapsedMs) : ''}`
-      : 'no points';
+    const chip = correct
+      ? `+${points}${combo >= 2 ? ' · ×' + Math.min(combo, COMBO_CAP) : ''}`
+      : 'no points · combo lost';
 
-    // one sentence on the best distractor: the one they fell for,
-    // or the most tempting one when they got it right
     const wrongPick = item.options.find((o) => chosen.has(o.id) && !o.correct && o.whyNot);
     const bestDistractor = wrongPick ?? item.options.find((o) => !o.correct && o.whyNot);
 
     const card = el(`<div class="result ${correct ? '' : 'bad'}">
-      <div class="rh"><span class="rt">${esc(title)}</span><span class="xp">${esc(xp)}</span></div>
+      <div class="rh"><span class="rt">${esc(title)}</span><span class="xp ${correct ? '' : 'zero'}">${esc(chip)}</span></div>
       <p>${esc(item.discriminator)}</p>
     </div>`);
     if (bestDistractor) {
@@ -298,7 +321,6 @@ export function renderDrill(ctx: Ctx): HTMLElement {
     if (item.teachingPoint) {
       card.appendChild(el(`<p>${esc(item.teachingPoint)}</p>`));
     }
-    // Treatment items carry a higher bar: surface the guideline citation.
     if (TREATMENT_TYPES.includes(item.type) && item.source[0]) {
       const s = item.source[0];
       card.appendChild(el(`<p class="src">Guideline · ${esc(s.ref)} (${s.year})</p>`));
@@ -326,15 +348,19 @@ export function renderDrill(ctx: Ctx): HTMLElement {
       moves: outcome.masteryMoves,
       repaired: outcome.streakUpdate.repaired,
       points: totalPoints(),
-      newAwards: outcome.newAwards,
-      promotedTo: outcome.promotedTo,
+      newBadges: outcome.newBadges,
+      shownInline,
     };
-    ctx.go('summary', summary);
+    // celebrations fire full-screen BEFORE the summary: milestone first,
+    // then level-up (spec: never both back-to-back without a claim between)
+    const queue: Celebration[] = [];
+    for (const m of outcome.milestones) queue.push({ kind: 'milestone', milestone: m });
+    if (outcome.leveledUpTo) queue.push({ kind: 'level', level: outcome.leveledUpTo });
+    runCelebrations(queue, outcome.state, () => ctx.go('summary', summary));
   }
 
   checkBtn.addEventListener('click', () => (locked ? advance() : check()));
 
-  // keyboard: A–E to select, Enter to check/advance
   root.tabIndex = -1;
   root.addEventListener('keydown', (e) => {
     const item = set[index];
@@ -351,6 +377,25 @@ export function renderDrill(ctx: Ctx): HTMLElement {
 
   showItem();
   return root;
+}
+
+/** Count a number up over ~26 frames; collapses under reduced motion. */
+function animatePoints(node: HTMLElement, to: number): void {
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const from = Number(node.textContent) || 0;
+  if (reduce || from === to) {
+    node.textContent = String(to);
+    return;
+  }
+  const frames = 26;
+  let i = 0;
+  const step = (): void => {
+    i++;
+    const v = Math.round(from + ((to - from) * i) / frames);
+    node.textContent = String(i >= frames ? to : v);
+    if (i < frames) setTimeout(step, 34);
+  };
+  step();
 }
 
 export type { GameDef };

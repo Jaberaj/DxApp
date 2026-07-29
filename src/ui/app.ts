@@ -6,7 +6,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 import type { Account, AppState, SyncStatus } from '../types';
-import { loadState, saveState } from '../state/store';
+import { loadState, reconcileShields, saveState } from '../state/store';
 import {
   backendForAccount,
   loadAccount,
@@ -60,12 +60,20 @@ export class App {
   private engine: SyncEngine | null = null;
   private syncStatusInternal: SyncStatus = 'disabled';
   private current: ScreenId = 'today';
+  private shieldToast = false;
   payload: unknown = undefined;
 
   constructor(root: HTMLElement) {
     this.root = root;
     this.stateInternal = loadState();
     this.accountInternal = loadAccount();
+    // spend a shield to cover a single missed day, once, at launch
+    const { state, spentShield } = reconcileShields(this.stateInternal, new Date());
+    if (spentShield) {
+      this.stateInternal = state;
+      saveState(state);
+      this.shieldToast = true;
+    }
     this.initSync();
   }
 
@@ -170,6 +178,19 @@ export class App {
     if (TABBED.includes(this.current)) {
       this.root.appendChild(this.tabbar());
     }
+
+    if (this.shieldToast) {
+      this.shieldToast = false;
+      const n = this.stateInternal.awards?.shields ?? 0;
+      this.showToast(`A shield covered yesterday. ${n} left.`);
+    }
+  }
+
+  private showToast(text: string): void {
+    const t = el(`<div class="toast" role="status">${text}</div>`);
+    this.root.appendChild(t);
+    setTimeout(() => t.classList.add('out'), 3200);
+    setTimeout(() => t.remove(), 3600);
   }
 
   private tabbar(): HTMLElement {
