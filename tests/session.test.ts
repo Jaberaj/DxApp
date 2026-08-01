@@ -239,6 +239,28 @@ describe('session builder — new vs review (coverage push)', () => {
     const starved = [...pool].filter((id) => !seen.has(id));
     expect(starved, `never served: ${starved.join(', ')}`).toHaveLength(0);
   });
+
+  it('serves a FRESH learner fairly — no bank-order bias, all eligible concepts appear', () => {
+    // A fresh learner's concepts all share the "never-seen" priority tier, so
+    // without a random tiebreak the weighted window always favours the same
+    // early-bank concepts and starves the rest. Keep state fresh (no commit).
+    const state = { ...defaultState(), focus: { mode: 'course' as const, id: 'neuro', mixPercent: 100, boards: 'all' as const, subtopics: [] } };
+    const pool = new Set(
+      CONCEPTS.filter((c) =>
+        ITEMS.some((i) => i.conceptId === c.conceptId && i.tags.system === 'neuro' && filterFor('rapid_ddx').types.includes(i.type)),
+      ).map((c) => c.conceptId),
+    );
+    const counts = new Map<string, number>();
+    for (let s = 0; s < 200; s++) {
+      const set = buildSet(ITEMS, CONCEPTS, state, NOW, filterFor('rapid_ddx'), mulberry(s + 1));
+      for (const it of set) counts.set(it.conceptId, (counts.get(it.conceptId) ?? 0) + 1);
+    }
+    const missing = [...pool].filter((id) => !counts.has(id));
+    expect(missing, `never served to a fresh learner: ${missing.join(', ')}`).toHaveLength(0);
+    // distribution is fair, not the ~7× spread of the bank-order-biased version
+    const vals = [...pool].map((id) => counts.get(id) ?? 0);
+    expect(Math.max(...vals) / Math.max(Math.min(...vals), 1)).toBeLessThan(3);
+  });
 });
 
 describe('session builder — focus scoping', () => {

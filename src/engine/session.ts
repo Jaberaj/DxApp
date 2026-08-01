@@ -209,6 +209,13 @@ function collectCandidates(
  * WEIGHTED sample from the best-ranked window, not a strict argmax, so
  * consecutive sets don't feel identical (Efraimidis–Spirakis weighted
  * sampling without replacement, deterministic under a fixed rng).
+ *
+ * A RANDOM tiebreaker orders equally-ranked candidates: concepts that
+ * share a priority tier (e.g. every never-seen concept for a fresh
+ * learner) would otherwise keep their bank order through a stable sort,
+ * so the weighted window always favoured the same early concepts. The
+ * tiebreak makes ties fair, so selection is genuinely random within a
+ * tier while still honouring due > new > seen priority.
  */
 function pick(pool: Candidate[], n: number, rng: () => number, recency: Map<string, number>): Candidate[] {
   if (n <= 0 || pool.length === 0) return [];
@@ -223,8 +230,9 @@ function pick(pool: Candidate[], n: number, rng: () => number, recency: Map<stri
         (c.due ? Math.min(c.dueIn, 365) : 0) + // sooner-due first among reviews
         (100 - c.weakness) * 0.5 + // weaker topics first
         stalenessPenalty(c, recency), // recently-seen concepts sink
+      tie: rng(), // random tiebreak so equal-priority ties aren't bank-ordered
     }))
-    .sort((a, b) => a.key - b.key);
+    .sort((a, b) => a.key - b.key || a.tie - b.tie);
 
   // Sample from a window of the strongest candidates so the same few
   // don't appear every time; the window is at least n, up to ~half.
