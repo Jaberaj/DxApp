@@ -9,6 +9,7 @@
     "validate": "tsx scripts/validate-content.ts",
     "coverage": "tsx scripts/coverage-report.ts",
     "coverage:html": "tsx scripts/coverage-report.ts --html coverage-map.html",
+    "import:kg": "tsx scripts/import-usmle-kg.ts",
     "review": "tsx scripts/review-content.ts",
     "prebuild": "npm run validate",
     "build": "tsc --noEmit && vite build",

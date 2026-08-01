@@ -1,0 +1,182 @@
+[
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-N-0068",
+    "presentationIds": [
+      "PRS-NEUR-053"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-079"
+    ],
+    "referenceIds": [
+      "REF-NEUR-005"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-N-0067",
+    "presentationIds": [
+      "PRS-NEUR-062"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-103"
+    ],
+    "referenceIds": [
+      "REF-NEUR-005"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-N-0065",
+    "presentationIds": [
+      "PRS-NEUR-074"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-072"
+    ],
+    "referenceIds": [
+      "REF-NEUR-004"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-N-0066",
+    "presentationIds": [
+      "PRS-NEUR-072"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-083"
+    ],
+    "referenceIds": [
+      "REF-NEUR-005"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-N-0062",
+    "presentationIds": [
+      "PRS-NEUR-070"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-044"
+    ],
+    "referenceIds": [
+      "REF-NEUR-002"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-N-0060",
+    "presentationIds": [
+      "PRS-NEUR-071"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-013"
+    ],
+    "referenceIds": [
+      "REF-NEUR-001"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-NEUR-001",
+    "presentationIds": [
+      "PRS-NEUR-051"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-001"
+    ],
+    "referenceIds": [
+      "REF-NEUR-001"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-NEUR-101",
+    "presentationIds": [
+      "PRS-006"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-101"
+    ],
+    "referenceIds": [
+      "REF-NEUR-005"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-NEUR-118",
+    "presentationIds": [
+      "PRS-NEUR-061"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-118"
+    ],
+    "referenceIds": [
+      "REF-NEUR-005"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  },
+  {
+    "repository": "Jaberaj/usmle-knowledge-graph",
+    "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+    "contractVersion": "1.0.0",
+    "knowledgeBaseVersion": "0.1.0",
+    "diseaseId": "DIS-NEUR-053",
+    "presentationIds": [
+      "PRS-007"
+    ],
+    "relationshipIds": [
+      "DFL-NEUR-053"
+    ],
+    "referenceIds": [
+      "REF-NEUR-005"
+    ],
+    "importerVersion": "0.1.0",
+    "generatedAt": "2026-08-01T18:24:39.561Z"
+  }
+]

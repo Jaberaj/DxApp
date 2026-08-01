@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-08-01T18:24:39.561Z",
+  "snapshotDir": "/workspace/usmle-knowledge-graph/dist/json",
+  "snapshotCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+  "contractVersion": "1.0.0",
+  "knowledgeBaseVersion": "0.1.0",
+  "importerVersion": "0.1.0",
+  "recordsLoaded": {
+    "algorithm_steps": 870,
+    "algorithms": 93,
+    "diagnostics": 30,
+    "disease_diagnostics": 562,
+    "disease_differentials": 642,
+    "disease_presentations": 473,
+    "disease_treatments": 651,
+    "diseases": 473,
+    "entity_references": 385,
+    "medications": 50,
+    "presentations": 96,
+    "references": 15,
+    "treatments": 79
+  },
+  "conceptsCrosswalked": 10,
+  "matched": 9,
+  "ambiguousMatches": 1,
+  "unmatched": 0,
+  "conceptCandidates": 10,
+  "itemCandidates": 0,
+  "skipped": 40,
+  "skipReasons": {
+    "finding-items-gated-by-status": 30,
+    "treatment-edge-unreviewed": 10
+  },
+  "missingReferences": 0,
+  "sourceStatusCounts": {
+    "semantic_review_pending": 10
+  },
+  "blockedModules": [],
+  "addedToProductionBank": 0
+}

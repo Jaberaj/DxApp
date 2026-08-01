@@ -1,0 +1,337 @@
+{
+  "conceptCandidates": [
+    {
+      "candidateId": "kgc.DIS-N-0068.concept",
+      "dxAppConceptId": "guillain-barre",
+      "kgDiseaseId": "DIS-N-0068",
+      "name": "Guillain-Barre syndrome",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Neurological Diagnostic Tests and Procedures",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-N-0068",
+        "presentationIds": [
+          "PRS-NEUR-053"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-079"
+        ],
+        "referenceIds": [
+          "REF-NEUR-005"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-N-0067.concept",
+      "dxAppConceptId": "myasthenia-gravis",
+      "kgDiseaseId": "DIS-N-0067",
+      "name": "Myasthenia gravis",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Neurological Diagnostic Tests and Procedures",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-N-0067",
+        "presentationIds": [
+          "PRS-NEUR-062"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-103"
+        ],
+        "referenceIds": [
+          "REF-NEUR-005"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-N-0065.concept",
+      "dxAppConceptId": "multiple-sclerosis",
+      "kgDiseaseId": "DIS-N-0065",
+      "name": "Multiple sclerosis",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Multiple Sclerosis",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-N-0065",
+        "presentationIds": [
+          "PRS-NEUR-074"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-072"
+        ],
+        "referenceIds": [
+          "REF-NEUR-004"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-N-0066.concept",
+      "dxAppConceptId": "parkinson",
+      "kgDiseaseId": "DIS-N-0066",
+      "name": "Parkinson disease",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Neurological Diagnostic Tests and Procedures",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-N-0066",
+        "presentationIds": [
+          "PRS-NEUR-072"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-083"
+        ],
+        "referenceIds": [
+          "REF-NEUR-005"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-N-0062.concept",
+      "dxAppConceptId": "status-epilepticus",
+      "kgDiseaseId": "DIS-N-0062",
+      "name": "Status epilepticus",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Epilepsy and Seizures",
+          "year": 2024
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-N-0062",
+        "presentationIds": [
+          "PRS-NEUR-070"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-044"
+        ],
+        "referenceIds": [
+          "REF-NEUR-002"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-N-0060.concept",
+      "dxAppConceptId": "sah-thunderclap",
+      "kgDiseaseId": "DIS-N-0060",
+      "name": "Subarachnoid hemorrhage",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Stroke Overview",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-N-0060",
+        "presentationIds": [
+          "PRS-NEUR-071"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-013"
+        ],
+        "referenceIds": [
+          "REF-NEUR-001"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-NEUR-001.concept",
+      "dxAppConceptId": "tia",
+      "kgDiseaseId": "DIS-NEUR-001",
+      "name": "Transient ischemic attack",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Stroke Overview",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-NEUR-001",
+        "presentationIds": [
+          "PRS-NEUR-051"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-001"
+        ],
+        "referenceIds": [
+          "REF-NEUR-001"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-NEUR-101.concept",
+      "dxAppConceptId": "wernicke",
+      "kgDiseaseId": "DIS-NEUR-101",
+      "name": "Wernicke encephalopathy",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Neurological Diagnostic Tests and Procedures",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-NEUR-101",
+        "presentationIds": [
+          "PRS-006"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-101"
+        ],
+        "referenceIds": [
+          "REF-NEUR-005"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-NEUR-118.concept",
+      "dxAppConceptId": "bell-palsy",
+      "kgDiseaseId": "DIS-NEUR-118",
+      "name": "Bell palsy",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Neurological Diagnostic Tests and Procedures",
+          "year": 2025
+        }
+      ],
+      "gaps": [],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-NEUR-118",
+        "presentationIds": [
+          "PRS-NEUR-061"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-118"
+        ],
+        "referenceIds": [
+          "REF-NEUR-005"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    },
+    {
+      "candidateId": "kgc.DIS-NEUR-053.concept",
+      "dxAppConceptId": "migraine",
+      "kgDiseaseId": "DIS-NEUR-053",
+      "name": "Migraine without aura",
+      "importStatus": "semantic_review_pending",
+      "previewOnly": true,
+      "resolvedSources": [
+        {
+          "ref": "Neurological Diagnostic Tests and Procedures",
+          "year": 2025
+        }
+      ],
+      "gaps": [
+        "crosswalk is \"candidate\" — needs human confirmation"
+      ],
+      "provenance": {
+        "repository": "Jaberaj/usmle-knowledge-graph",
+        "sourceCommit": "529cd13c8f1523ac09e5002ab002a661d40f3a65",
+        "contractVersion": "1.0.0",
+        "knowledgeBaseVersion": "0.1.0",
+        "diseaseId": "DIS-NEUR-053",
+        "presentationIds": [
+          "PRS-007"
+        ],
+        "relationshipIds": [
+          "DFL-NEUR-053"
+        ],
+        "referenceIds": [
+          "REF-NEUR-005"
+        ],
+        "importerVersion": "0.1.0",
+        "generatedAt": "2026-08-01T18:24:39.561Z"
+      }
+    }
+  ],
+  "itemCandidates": []
+}
