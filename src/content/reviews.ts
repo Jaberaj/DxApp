@@ -614,3 +614,108 @@ record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-29', [
     notes: 'Verified: post-strep Jones criteria (migratory polyarthritis, carditis, Sydenham chorea, erythema marginatum, nodules), mitral stenosis late; penicillin + anti-inflammatory + secondary prophylaxis.',
   },
 ]);
+
+/* ── Renal + Respiratory breadth pour: first-pass review ──────────
+   Coverage-map-driven (KG sparse for these systems). One family →
+   in_review, never validated; checked against each concept's cited
+   public sources. */
+record('claude-opus-4-8', 'llm', 'anthropic', '2026-07-30', [
+  /* Renal */
+  {
+    conceptId: 'rpgn', verdict: 'pass',
+    sources: [{ ref: 'KDIGO Clinical Practice Guideline for the Management of Glomerular Diseases', year: 2021 }],
+    notes: 'Verified: nephritic + rapid Cr rise + crescents; IF pattern classifies (linear anti-GBM / granular immune-complex / pauci-immune ANCA). Single guideline source.',
+  },
+  {
+    conceptId: 'alport', verdict: 'pass',
+    sources: [{ ref: 'Kashtan et al., Alport Syndrome — Expert Guidelines for Diagnosis and Management', year: 2018 }],
+    notes: 'Verified: X-linked type IV collagen; hematuria + sensorineural hearing loss + lenticonus, basket-weave GBM; distinct from benign thin basement membrane. Single guideline.',
+  },
+  {
+    conceptId: 'mpgn', verdict: 'pass',
+    sources: [{ ref: 'KDIGO Clinical Practice Guideline for the Management of Glomerular Diseases', year: 2021 }],
+    notes: 'Verified: low complement + tram-track double contour, HCV/cryoglobulinemia; distinct from normal-complement membranous. Single guideline source.',
+  },
+  {
+    conceptId: 'bartter-gitelman', verdict: 'pass',
+    sources: [{ ref: 'Blanchard et al., Gitelman Syndrome — Consensus and Guidance (KDIGO Conference)', year: 2017 }],
+    notes: 'Verified: hypokalemic metabolic alkalosis with NORMAL/low BP and high renin (loop-like Bartter / thiazide-like Gitelman); separates from hyperaldosteronism. Single consensus source.',
+  },
+  {
+    conceptId: 'hyponatremia-workup', verdict: 'pass',
+    sources: [{ ref: 'Spasovski et al., European Clinical Practice Guideline on Diagnosis and Treatment of Hyponatraemia', year: 2014 }],
+    notes: 'Verified: confirm hypotonic → volume status + urine osm/Na → hypovolemic/euvolemic(SIADH)/hypervolemic; edema + low urine Na = hypervolemic. Single guideline source.',
+  },
+  {
+    conceptId: 'hypercalcemia', verdict: 'pass',
+    sources: [{ ref: 'Bilezikian et al., Guidelines on Evaluation and Management of Primary Hyperparathyroidism', year: 2014 }],
+    notes: 'Verified: PTH divides causes (high/normal = hyperparathyroidism, low = malignancy/vit D/granulomatous); severe symptomatic → IV fluids first, then calcitonin/bisphosphonate.',
+  },
+  {
+    conceptId: 'papillary-necrosis', verdict: 'pass',
+    sources: [{ ref: 'Jung et al., Renal Papillary Necrosis (RadioGraphics review)', year: 2006 }],
+    notes: 'Verified: gross hematuria + flank pain + sloughed papilla; risk = sickle cell, analgesics, diabetes, pyelonephritis, obstruction. Single imaging-review source.',
+  },
+  {
+    conceptId: 'hus', verdict: 'pass',
+    sources: [
+      { ref: 'Freedman et al., Shiga Toxin–Producing E. coli Infection and Risk of HUS (systematic review)', year: 2016 },
+      { ref: 'Cody & Dixon, Hemolytic Uremic Syndrome (Pediatric Clinics review)', year: 2019 },
+    ],
+    notes: 'Verified: MAHA + thrombocytopenia + AKI after Shiga-toxin diarrhea (children), renal-predominant vs neuro-predominant TTP; supportive care, avoid antibiotics/antimotility.',
+  },
+  {
+    conceptId: 'prostatitis', verdict: 'pass',
+    sources: [{ ref: 'Coker & Dierfeldt, Acute Bacterial Prostatitis: Diagnosis and Management (Am Fam Physician)', year: 2016 }],
+    notes: 'Verified: fever + dysuria + tender boggy prostate; prostate-penetrating antibiotic (fluoroquinolone/TMP-SMX), avoid vigorous massage (bacteremia). Single review source.',
+  },
+  {
+    conceptId: 'epididymitis', verdict: 'pass',
+    sources: [{ ref: 'CDC Sexually Transmitted Infections Treatment Guidelines — Epididymitis', year: 2021 }],
+    notes: 'Verified: gradual pain, preserved cremasteric, Prehn+; < 35 GC/chlamydia (ceftriaxone + doxycycline), ≥ 35 coliforms (fluoroquinolone); exclude torsion first. Single guideline.',
+  },
+  /* Respiratory */
+  {
+    conceptId: 'tuberculosis', verdict: 'pass',
+    sources: [
+      { ref: 'Lewinsohn et al., ATS/IDSA/CDC Guidelines: Diagnosis of Tuberculosis', year: 2017 },
+      { ref: 'Nahid et al., ATS/CDC/IDSA Guidelines: Treatment of Drug-Susceptible Tuberculosis', year: 2016 },
+    ],
+    notes: 'Verified: apical cavitary reactivation; airborne isolation + sputum AFB/NAAT/culture; RIPE for active, isoniazid for latent (never monotherapy for active).',
+  },
+  {
+    conceptId: 'bronchiectasis', verdict: 'pass',
+    sources: [{ ref: 'Polverino et al., ERS Guidelines for the Management of Adult Bronchiectasis', year: 2017 }],
+    notes: 'Verified: chronic copious purulent sputum + recurrent infection + airway dilation (tram-track/signet-ring) on HRCT; CF/post-infectious/ABPA causes. Single guideline source.',
+  },
+  {
+    conceptId: 'obstructive-vs-restrictive', verdict: 'pass',
+    sources: [{ ref: 'Stanojevic et al., ERS/ATS Technical Standard: Interpretive Strategies for Lung Function Tests', year: 2022 }],
+    notes: 'Verified: FEV1/FVC < 0.7 = obstructive; preserved/high ratio with low TLC = restrictive. Single standards source.',
+  },
+  {
+    conceptId: 'osa', verdict: 'pass',
+    sources: [{ ref: 'Kapur et al., AASM Clinical Practice Guideline: Diagnostic Testing for Adult Obstructive Sleep Apnea', year: 2017 }],
+    notes: 'Verified: snoring + witnessed apneas + daytime somnolence in obesity; polysomnography confirms, CPAP first-line; avoid sedatives. Single guideline source.',
+  },
+  {
+    conceptId: 'solitary-nodule', verdict: 'pass',
+    sources: [{ ref: 'MacMahon et al., Fleischner Society Guidelines for Management of Incidental Pulmonary Nodules', year: 2017 }],
+    notes: 'Verified: compare prior imaging first (stable ≥ 2 y favors benign), risk-stratify by size/features → surveillance vs PET/biopsy. Single guideline source.',
+  },
+  {
+    conceptId: 'pneumoconioses', verdict: 'pass',
+    sources: [{ ref: 'ATS — Diagnosis and Initial Management of Nonmalignant Diseases Related to Asbestos (Official Statement)', year: 2004 }],
+    notes: 'Verified: asbestos = lower-lobe + pleural plaques + mesothelioma risk; silica = upper-lobe + eggshell + TB risk; coal = upper-lobe nodules. Single statement source.',
+  },
+  {
+    conceptId: 'cystic-fibrosis', verdict: 'pass',
+    sources: [{ ref: 'Farrell et al., Diagnosis of Cystic Fibrosis: Cystic Fibrosis Foundation Consensus Guidelines', year: 2017 }],
+    notes: 'Verified: recurrent sinopulmonary infection (Pseudomonas) + pancreatic insufficiency + failure to thrive; elevated sweat chloride + CFTR. Single consensus source.',
+  },
+  {
+    conceptId: 'hypersensitivity-pneumonitis', verdict: 'pass',
+    sources: [{ ref: 'Raghu et al., ATS/JRS/ALAT Clinical Practice Guideline: Diagnosis of Hypersensitivity Pneumonitis in Adults', year: 2020 }],
+    notes: 'Verified: exposure-linked cough/dyspnea (birds/mold) that improves away from antigen; avoidance is the cornerstone. Single guideline source.',
+  },
+]);
